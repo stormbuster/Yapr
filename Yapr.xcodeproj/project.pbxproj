@@ -227,6 +227,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				OTHER_CODE_SIGN_FLAGS = "-r $(SRCROOT)/Yapr/designated.req";
 				PRODUCT_BUNDLE_IDENTIFIER = com.stormbuster.yapr;
 				SDKROOT = macosx;
 			};
@@ -367,6 +368,7 @@
 					"$(inherited)",
 					"@executable_path/../Frameworks",
 				);
+				OTHER_CODE_SIGN_FLAGS = "-r $(SRCROOT)/Yapr/designated.req";
 				PRODUCT_BUNDLE_IDENTIFIER = com.stormbuster.yapr;
 				SDKROOT = macosx;
 			};

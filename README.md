@@ -29,7 +29,10 @@ launches it. Pass another folder (`scripts/release.sh ~/Applications`) or `--no-
 On first launch Yapr downloads the Phonon-2 Core ML model (330 MB, pinned revision, SHA-256 checked) from
 [FermionResearch/Phonon-2-CoreML](https://huggingface.co/FermionResearch/Phonon-2-CoreML) into
 `~/Library/Application Support/Yapr/`, and the first load prepares it for the Neural Engine (a minute or
-two, once). macOS asks for microphone access the first time you record.
+two, once). macOS asks for microphone access on first launch, which also lists Yapr under System Settings ›
+Privacy & Security › Microphone. The build is ad-hoc signed with its designated requirement pinned to the bundle id
+(`Yapr/designated.req`), so the permission survives rebuilds. To see the first-run prompt again:
+`tccutil reset Microphone com.stormbuster.yapr`.
 
 ## How the live transcription works
 

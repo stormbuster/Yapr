@@ -1,3 +1,4 @@
+import AVFoundation
 import AppKit
 import Combine
 
@@ -43,9 +44,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         }.store(in: &cancellables)
 
         model.loadModel()
+        AppDelegate.requestMicrophoneOnFirstRun()
         #if DEBUG
         DebugHarness.runIfRequested(model: model, panel: panel, settings: settingsWindow)
         #endif
+    }
+
+    /// Ask on first launch rather than on the first click of the microphone, so Yapr is listed under
+    /// Privacy & Security › Microphone from the start and the first recording is not interrupted by the prompt.
+    private static func requestMicrophoneOnFirstRun() {
+        guard AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined else { return }
+        NSApp.activate(ignoringOtherApps: true)
+        AVCaptureDevice.requestAccess(for: .audio) { _ in }
     }
 
     @objc private func statusItemClicked(_ sender: NSStatusBarButton) {

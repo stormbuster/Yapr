@@ -19,6 +19,8 @@ targets:
     platform: macOS
     sources:
       - path: Yapr
+        excludes:
+          - designated.req
     dependencies:
       - package: PhononCoreML
     info:
@@ -38,5 +40,8 @@ targets:
         CODE_SIGN_STYLE: Manual
         ENABLE_HARDENED_RUNTIME: NO
         CODE_SIGN_ENTITLEMENTS: Yapr/Yapr.entitlements
+        # Ad-hoc signatures are otherwise identified by their hash, so macOS would forget the microphone permission
+        # on every rebuild; pinning the designated requirement to the bundle id keeps it.
+        OTHER_CODE_SIGN_FLAGS: "-r $(SRCROOT)/Yapr/designated.req"
         COMBINE_HIDPI_IMAGES: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
