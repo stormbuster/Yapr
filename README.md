@@ -26,14 +26,24 @@ listens, and unplugging or switching the microphone restarts capture on the new 
 
 ## Build
 
-Requires an Apple silicon Mac, macOS 15 or later, Xcode 16+ and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
+Requires macOS 15 or later on an Apple silicon or Intel Mac, Xcode 16+ and
+[XcodeGen](https://github.com/yonaskolb/XcodeGen). Release builds are universal: one app for both kinds of Mac.
 
 ```bash
 scripts/release.sh
 ```
 
 This generates the project, builds Release, quits a running Yapr, installs to `/Applications/Yapr.app` and
-launches it. Pass another folder (`scripts/release.sh ~/Applications`) or `--no-launch` as needed.
+launches it. Pass another folder (`scripts/release.sh ~/Applications`), `--no-launch`, or `--zip` to also write
+`build/Yapr-<version>.zip` for copying to another Mac.
+
+### On an Intel Mac
+
+Intel Macs have no Neural Engine, so Phonon 2 runs on the CPU: expect live words to settle a little more slowly,
+files at several times real speed, and about 2.5 GB of memory while Yapr is open. To install there, either clone
+this repository and run `scripts/release.sh`, or copy the zip over and unzip it into Applications. The app is not
+notarised, so the first time, Control-click it and choose Open (or run
+`xattr -dr com.apple.quarantine /Applications/Yapr.app`).
 
 On first launch Yapr downloads the Phonon-2 Core ML model (330 MB, pinned revision, SHA-256 checked) from
 [FermionResearch/Phonon-2-CoreML](https://huggingface.co/FermionResearch/Phonon-2-CoreML) into
@@ -63,7 +73,8 @@ YAPR_SNAPSHOTS=/tmp/snaps YAPR_FEED=/tmp/speech.wav build/Build/Products/Debug/Y
 
 ## Licence
 
-Yapr is MIT licensed (see `LICENSE`). The fonts, the model and the Swift package keep their own licences, below.
+Yapr is MIT licensed (see `LICENSE`). The fonts, the model and the vendored Swift package keep their own licences,
+below.
 
 ## Credits
 
@@ -72,6 +83,7 @@ Yapr is MIT licensed (see `LICENSE`). The fonts, the model and the Swift package
 - EB Garamond by Georg Duffner and Octavio Pardo, SIL Open Font License (`Yapr/Fonts/OFL.txt`).
 - The borderless transcript window follows [stormbuster/borderless](https://github.com/stormbuster/borderless).
 
-This repository contains no Phonon code or weights: the Swift package is fetched by Swift Package Manager and the
-model is downloaded from Hugging Face on first launch. If you distribute a built Yapr.app, it statically includes
-phonon-coreml, so ship its Apache 2.0 licence and NOTICE with it, and credit the model as above (CC-BY-4.0).
+`Vendor/phonon-coreml` is a copy of phonon-coreml 1.1.2 under its own Apache 2.0 licence and NOTICE, modified so it
+also builds for Intel Macs (see `Vendor/phonon-coreml/PATCHES.md`). The model weights are not in this repository;
+they are downloaded from Hugging Face on first launch. If you distribute a built Yapr.app, it includes phonon-coreml,
+so ship its licence and NOTICE with it, and credit the model as above (CC-BY-4.0).

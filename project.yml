@@ -6,13 +6,18 @@ options:
   createIntermediateGroups: true
 packages:
   PhononCoreML:
-    url: https://github.com/fermionresearch/phonon-coreml
-    exactVersion: 1.1.2
+    path: Vendor/phonon-coreml   # 1.1.2, patched to build for Intel; see Vendor/phonon-coreml/PATCHES.md
 settings:
   base:
     SWIFT_VERSION: "5.0"
     MACOSX_DEPLOYMENT_TARGET: "15.0"
-    ARCHS: arm64
+  configs:
+    # One universal app: Apple silicon and Intel. Debug builds only the Mac you are on.
+    Debug:
+      ONLY_ACTIVE_ARCH: YES
+    Release:
+      ONLY_ACTIVE_ARCH: NO
+      ARCHS: "arm64 x86_64"
 targets:
   Yapr:
     type: application

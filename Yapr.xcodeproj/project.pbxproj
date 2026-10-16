@@ -47,6 +47,7 @@
 		A05FBD8D0FD9ED3F4DD30BB8 /* Yapr.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Yapr.entitlements; sourceTree = "<group>"; };
 		A711769F1A0E041BBC1E8062 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A7717B61E2A0048C88470374 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
+		C53C3527D12E68950103A8A3 /* phonon-coreml */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "phonon-coreml"; path = "Vendor/phonon-coreml"; sourceTree = SOURCE_ROOT; };
 		C5E7DFC7541E79D5D900BDCF /* MediaDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaDecoder.swift; sourceTree = "<group>"; };
 		C69C199183CA1CB007B3C0DD /* ModelStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelStore.swift; sourceTree = "<group>"; };
 		CFF758A7C94E600570BE8BB7 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
@@ -68,9 +69,18 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		193A1CC7F0A4DF21BEEE8732 /* Packages */ = {
+			isa = PBXGroup;
+			children = (
+				C53C3527D12E68950103A8A3 /* phonon-coreml */,
+			);
+			name = Packages;
+			sourceTree = "<group>";
+		};
 		89CA33AF1338332D76648A61 = {
 			isa = PBXGroup;
 			children = (
+				193A1CC7F0A4DF21BEEE8732 /* Packages */,
 				A0CF67E515E338F07CFEB79C /* Yapr */,
 				AC0143D6B8DD186B0D867BD6 /* Products */,
 			);
@@ -168,7 +178,7 @@
 			mainGroup = 89CA33AF1338332D76648A61;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				C17EA1B4E54951F18D0816A0 /* XCRemoteSwiftPackageReference "phonon-coreml" */,
+				C504FB3DA4127A33B3D3C2EC /* XCLocalSwiftPackageReference "Vendor/phonon-coreml" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = AC0143D6B8DD186B0D867BD6 /* Products */;
@@ -245,7 +255,6 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = arm64;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -309,7 +318,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
-				ARCHS = arm64;
+				ARCHS = "arm64 x86_64";
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
@@ -354,6 +363,7 @@
 				MACOSX_DEPLOYMENT_TARGET = 15.0;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = macosx;
 				SWIFT_COMPILATION_MODE = wholemodule;
@@ -405,21 +415,16 @@
 		};
 /* End XCConfigurationList section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		C17EA1B4E54951F18D0816A0 /* XCRemoteSwiftPackageReference "phonon-coreml" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/fermionresearch/phonon-coreml";
-			requirement = {
-				kind = exactVersion;
-				version = 1.1.2;
-			};
+/* Begin XCLocalSwiftPackageReference section */
+		C504FB3DA4127A33B3D3C2EC /* XCLocalSwiftPackageReference "Vendor/phonon-coreml" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = "Vendor/phonon-coreml";
 		};
-/* End XCRemoteSwiftPackageReference section */
+/* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		4052C425B41F449B3D5DDD01 /* PhononCoreML */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = C17EA1B4E54951F18D0816A0 /* XCRemoteSwiftPackageReference "phonon-coreml" */;
 			productName = PhononCoreML;
 		};
 /* End XCSwiftPackageProductDependency section */

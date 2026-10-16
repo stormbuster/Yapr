@@ -22,9 +22,15 @@ final class LiveTranscriber {
     private var silenceCarried = 0.0          // trailing silence of the last committed segment, seconds
 
     private static let rate = 16_000.0
+    #if arch(x86_64)
+    // Intel: no Neural Engine, so each pass costs more; pass less often over shorter phrases.
+    private static let tick = 0.5              // seconds between passes
+    private static let maxSegment = 8.0        // force a commit, keeping each pass short
+    #else
     private static let tick = 0.3              // seconds between passes
-    private static let pauseToCommit = 0.7     // seconds of trailing silence that end a phrase
     private static let maxSegment = 12.0       // force a commit before Phonon needs its long-audio path
+    #endif
+    private static let pauseToCommit = 0.7     // seconds of trailing silence that end a phrase
     private static let keepLive = 2.0          // on a forced commit, the last seconds stay live
     private static let paragraphPause = 3.5    // silence that starts a new paragraph
 

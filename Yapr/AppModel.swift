@@ -76,10 +76,19 @@ final class AppModel: ObservableObject {
         phase = .preparing("Loading Phonon 2")
         DispatchQueue.global(qos: .userInitiated).async { [weak self] in
             var options = Transcriber.Options()
-            options.functions = [5, 10, 15]
             options.singleShotMaxSeconds = 15
             options.eagerFunctions = [15]
+            #if arch(x86_64)
+            // Intel Macs have no Neural Engine, so Phonon runs on the CPU, where every encoder size holds its own
+            // unpacked copy of the weights. One size (15 s) serves both live phrases and file chunks.
+            options.computeUnits = .cpuOnly
+            options.functions = [15]
+            options.encoderInFlight = 1        // concurrent CPU predictions only add memory, not speed
+            options.decoderWorkers = 2
+            #else
+            options.functions = [5, 10, 15]
             options.backgroundLoad = true
+            #endif
             // The first load on a Mac prepares the model for the Neural Engine (a minute or two, once); say so only if it is slow.
             options.progress = { stage, _ in
                 guard stage == "compiling" || stage.hasPrefix("loading enc_15") else { return }

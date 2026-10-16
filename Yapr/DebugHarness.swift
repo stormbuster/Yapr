@@ -8,10 +8,18 @@ import Combine
 /// each stage to <dir>.
 enum DebugHarness {
     private static var cancellable: AnyCancellable?
+    private static var phaseLog: AnyCancellable?
 
     static func runIfRequested(model: AppModel, panel: CirclePanelController, settings: SettingsWindowController) {
         let env = ProcessInfo.processInfo.environment
         guard let dir = env["YAPR_SNAPSHOTS"] else { return }
+        let t0 = Date()
+        phaseLog = model.$phase.removeDuplicates { a, b in
+            if case .transcribingFile = a, case .transcribingFile = b { return true }
+            return a == b
+        }.sink { phase in
+            FileHandle.standardError.write(Data("YAPR_PHASE \(String(format: "%6.1f", Date().timeIntervalSince(t0))) s  \(phase)\n".utf8))
+        }
         let out = URL(fileURLWithPath: dir, isDirectory: true)
         if let file = env["YAPR_FILE"] { runFile(URL(fileURLWithPath: file), model: model, panel: panel, out: out); return }
         guard let feedPath = env["YAPR_FEED"] else { return }
