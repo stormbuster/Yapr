@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1939A56509DA3B6DA3C1E68D /* FileTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E43F40FA058A8AF0FD6F7CA /* FileTranscriber.swift */; };
+		2429FBFE1B0B215D769611F7 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C2B16D89DF89E7E7C1945BD0 /* AppIcon.icon */; };
 		2A9D8DFDF55BC29784D3DC7A /* CirclePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5955881BD1DDE29D349DCBF /* CirclePanel.swift */; };
 		2B1EE40B6042D7563B45E433 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFF758A7C94E600570BE8BB7 /* Typography.swift */; };
 		2F23EE3BB130550180E56B25 /* TranscriptFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A79B30E4F8A950A08894739 /* TranscriptFile.swift */; };
@@ -17,7 +18,6 @@
 		4EF3C595ABB96BF8BB8323C1 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 911B806B7914BC4AEAB21E34 /* AppModel.swift */; };
 		60AC44778491152DF0056151 /* OFL.txt in Resources */ = {isa = PBXBuildFile; fileRef = 7E931A86B432D9D3B868A10F /* OFL.txt */; };
 		668C65E8FF465C532966A42C /* ModelStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = C69C199183CA1CB007B3C0DD /* ModelStore.swift */; };
-		6A5BB90B8BBA37C169F9CBE9 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = D6D585FFCE68B90A37F9935B /* Assets.xcassets */; };
 		6ED1B3EA7F0D35ED296AE76E /* MediaDecoder.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5E7DFC7541E79D5D900BDCF /* MediaDecoder.swift */; };
 		77C1CF1A0150C98E84573F12 /* PhononCoreML in Frameworks */ = {isa = PBXBuildFile; productRef = 4052C425B41F449B3D5DDD01 /* PhononCoreML */; };
 		81A7C0EE265B465BC8B510D7 /* EBGaramond-Italic-VF.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 3CDEDEC25C688848A4A149E0 /* EBGaramond-Italic-VF.ttf */; };
@@ -47,12 +47,12 @@
 		A05FBD8D0FD9ED3F4DD30BB8 /* Yapr.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Yapr.entitlements; sourceTree = "<group>"; };
 		A711769F1A0E041BBC1E8062 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A7717B61E2A0048C88470374 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
+		C2B16D89DF89E7E7C1945BD0 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
 		C53C3527D12E68950103A8A3 /* phonon-coreml */ = {isa = PBXFileReference; lastKnownFileType = folder; name = "phonon-coreml"; path = "Vendor/phonon-coreml"; sourceTree = SOURCE_ROOT; };
 		C5E7DFC7541E79D5D900BDCF /* MediaDecoder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MediaDecoder.swift; sourceTree = "<group>"; };
 		C69C199183CA1CB007B3C0DD /* ModelStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ModelStore.swift; sourceTree = "<group>"; };
 		CFF758A7C94E600570BE8BB7 /* Typography.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Typography.swift; sourceTree = "<group>"; };
 		D5955881BD1DDE29D349DCBF /* CirclePanel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CirclePanel.swift; sourceTree = "<group>"; };
-		D6D585FFCE68B90A37F9935B /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		DF6FD3C4869CB6D31D56B976 /* TranscriptWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptWindow.swift; sourceTree = "<group>"; };
 		F5D2A6513184396722DF4613 /* LiveTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LiveTranscriber.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -89,8 +89,8 @@
 		A0CF67E515E338F07CFEB79C /* Yapr */ = {
 			isa = PBXGroup;
 			children = (
+				C2B16D89DF89E7E7C1945BD0 /* AppIcon.icon */,
 				911B806B7914BC4AEAB21E34 /* AppModel.swift */,
-				D6D585FFCE68B90A37F9935B /* Assets.xcassets */,
 				4359566522ECB8B0DF0F9A94 /* AudioCapture.swift */,
 				1C2951299F13F3FD2D0CE39D /* AudioDevices.swift */,
 				D5955881BD1DDE29D349DCBF /* CirclePanel.swift */,
@@ -195,7 +195,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				6A5BB90B8BBA37C169F9CBE9 /* Assets.xcassets in Resources */,
+				2429FBFE1B0B215D769611F7 /* AppIcon.icon in Resources */,
 				81A7C0EE265B465BC8B510D7 /* EBGaramond-Italic-VF.ttf in Resources */,
 				98AAF26BE3B6DEDC7995F3B6 /* EBGaramond-VF.ttf in Resources */,
 				60AC44778491152DF0056151 /* OFL.txt in Resources */,

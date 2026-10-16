@@ -26,6 +26,12 @@ targets:
       - path: Yapr
         excludes:
           - designated.req
+          - AppIcon.icon
+          - AppIcon.icon/**
+      # Icon Composer document: Liquid Glass app icon, compiled by Xcode into Assets.car and AppIcon.icns
+      - path: Yapr/AppIcon.icon
+        type: file
+        buildPhase: resources
     dependencies:
       - package: PhononCoreML
     info:

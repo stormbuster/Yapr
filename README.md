@@ -1,3 +1,5 @@
+<img src="docs/icon.png" width="128" height="128" alt="Yapr app icon: a frosted glass disc holding a black microphone button on an International Orange tile">
+
 # Yapr
 
 A tiny macOS menu bar app that transcribes what you say, live and on-device, with
@@ -23,6 +25,9 @@ Transcripts are plain UTF-8 text files, `Yapr <date> at <time>.txt`, written as 
 lost if the app quits mid-sentence. Paragraphs break at pauses longer than 3.5 s (2.5 s in files). Recording can run
 for as long as you like: only the current phrase is held in memory, the Mac is kept from idle-sleeping while Yapr
 listens, and unplugging or switching the microphone restarts capture on the new default.
+
+The app icon is an Icon Composer document (`Yapr/AppIcon.icon`) in the macOS Golden Gate style: Liquid Glass layers
+that the system renders, with light, dark, tinted and clear variants. Open it in Icon Composer to adjust it.
 
 ## Build
 
