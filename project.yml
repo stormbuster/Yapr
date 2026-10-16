@@ -32,6 +32,11 @@ targets:
         LSUIElement: true
         LSApplicationCategoryType: public.app-category.productivity
         NSMicrophoneUsageDescription: Yapr listens to your microphone to transcribe what you say. Audio never leaves your Mac.
+        CFBundleDocumentTypes:
+          - CFBundleTypeName: Audio or video
+            CFBundleTypeRole: Viewer
+            LSHandlerRank: Alternate
+            LSItemContentTypes: [public.audio, public.movie, public.audiovisual-content]
         NSHumanReadableCopyright: "Transcription by Phonon-2 (CC-BY-4.0, Fermion Research). Set in EB Garamond (OFL)."
     settings:
       base:

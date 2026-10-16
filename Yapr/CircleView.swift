@@ -6,12 +6,19 @@ struct CircleView: View {
     @ObservedObject var model: AppModel
     var onDragBegan: () -> Void
     var onDragEnded: () -> Void
+    @State private var dropTargeted = false
 
     static let diameter: CGFloat = 300
     static let margin: CGFloat = 32          // room for the shadow
     static var windowSize: CGFloat { diameter + margin * 2 }
 
     private var isRecording: Bool { model.phase == .recording || model.phase == .finishing }
+    private var fileJob: (name: String, progress: Double)? {
+        if case .transcribingFile(let name, let progress) = model.phase { return (name, progress) }
+        return nil
+    }
+    /// Recording or transcribing a file: the button shrinks to the bottom and words drift in above it.
+    private var isListening: Bool { isRecording || fileJob != nil }
 
     var body: some View {
         ZStack {
@@ -25,7 +32,34 @@ struct CircleView: View {
             content
         }
         .frame(width: Self.diameter, height: Self.diameter)
+        .contentShape(Circle())
+        .onDrop(of: [.fileURL], isTargeted: $dropTargeted, perform: drop)
         .frame(width: Self.windowSize, height: Self.windowSize)
+    }
+
+    private var acceptsDrops: Bool {
+        switch model.phase {
+        case .recording, .finishing: return false
+        default: return true
+        }
+    }
+
+    private var showDropHint: Bool { dropTargeted && acceptsDrops }
+
+    private func drop(_ providers: [NSItemProvider]) -> Bool {
+        guard acceptsDrops else { return false }
+        var urls: [URL] = []
+        let group = DispatchGroup()
+        let lock = NSLock()
+        for provider in providers where provider.canLoadObject(ofClass: URL.self) {
+            group.enter()
+            _ = provider.loadObject(ofClass: URL.self) { url, _ in
+                if let url { lock.lock(); urls.append(url); lock.unlock() }
+                group.leave()
+            }
+        }
+        group.notify(queue: .main) { model.transcribeFiles(urls.sorted { $0.lastPathComponent < $1.lastPathComponent }) }
+        return true
     }
 
     @ViewBuilder private var content: some View {
@@ -55,22 +89,42 @@ struct CircleView: View {
                 .buttonStyle(.plain)
             }
             .frame(width: 220)
-        case .ready, .recording, .finishing:
+        case .ready, .recording, .finishing, .transcribingFile:
             ZStack {
                 WordsView(words: model.words)
                     .frame(width: 228, height: 128)
                     .offset(y: -40)
-                    .opacity(isRecording ? 1 : 0)
-                Text("Yapr")
-                    .font(Typography.garamondFont(17, italic: true))
+                    .opacity(isListening ? 1 : 0)
+                Text(fileJob?.name ?? "")
+                    .font(Typography.garamondFont(14, italic: true))
                     .foregroundStyle(Palette.pencil)
-                    .offset(y: 104)
-                    .opacity(isRecording ? 0 : 1)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+                    .frame(width: 200)
+                    .offset(y: 37)
+                    .opacity(fileJob == nil ? 0 : 1)
                     .allowsHitTesting(false)
-                MicButton(recording: isRecording, busy: model.phase == .finishing, level: model.level, action: model.toggleRecording)
-                    .offset(y: isRecording ? 82 : 0)
+                Text(showDropHint ? "Drop to transcribe" : "Yapr")
+                    .font(Typography.garamondFont(17, italic: true))
+                    .foregroundStyle(showDropHint ? Palette.ink : Palette.pencil)
+                    .contentTransition(.opacity)
+                    .offset(y: 104)
+                    .opacity(isListening ? 0 : 1)
+                    .allowsHitTesting(false)
+                Circle()
+                    .strokeBorder(Palette.ink.opacity(0.5), style: StrokeStyle(lineWidth: 1.2, dash: [3, 5]))
+                    .padding(12)
+                    .opacity(showDropHint ? 1 : 0)
+                    .scaleEffect(showDropHint ? 1 : 1.04)
+                    .animation(.easeOut(duration: 0.2), value: showDropHint)
+                    .allowsHitTesting(false)
+                MicButton(compact: isListening, busy: model.phase == .finishing, level: model.level,
+                          fileProgress: fileJob?.progress,
+                          action: fileJob == nil ? model.toggleRecording : model.cancelFile)
+                    .offset(y: isListening ? 82 : 0)
             }
-            .animation(.spring(response: 0.5, dampingFraction: 0.82), value: isRecording)
+            .animation(.spring(response: 0.5, dampingFraction: 0.82), value: isListening)
+            .animation(.easeOut(duration: 0.2), value: showDropHint)
         }
     }
 }
@@ -99,14 +153,16 @@ private struct BreathingRing: View {
 }
 
 private struct MicButton: View {
-    let recording: Bool
+    let compact: Bool
     let busy: Bool
     let level: Float
+    let fileProgress: Double?          // a file being transcribed: progress ring, and the button cancels
     let action: () -> Void
     @State private var hover = false
 
     var body: some View {
-        let size: CGFloat = recording ? 64 : 124
+        let size: CGFloat = compact ? 64 : 124
+        let icon = fileProgress != nil ? "xmark" : compact ? "stop.fill" : "mic.fill"
         Button(action: action) {
             ZStack {
                 // Level rings: confidence that the microphone is hearing you.
@@ -116,10 +172,18 @@ private struct MicButton: View {
                 Circle()
                     .fill(Palette.ink.opacity(0.06))
                     .scaleEffect(1 + CGFloat(level) * 0.45)
+                // Reading progress through a dropped file.
+                Circle()
+                    .trim(from: 0, to: fileProgress ?? 0)
+                    .stroke(Palette.ink, style: StrokeStyle(lineWidth: 1.5, lineCap: .round))
+                    .rotationEffect(.degrees(-90))
+                    .padding(-9)
+                    .opacity(fileProgress == nil ? 0 : 1)
+                    .animation(.linear(duration: 0.2), value: fileProgress)
                 Circle()
                     .fill(Palette.ink)
-                Image(systemName: recording ? "stop.fill" : "mic.fill")
-                    .font(.system(size: recording ? 20 : 46, weight: .regular))
+                Image(systemName: icon)
+                    .font(.system(size: compact ? 20 : 46, weight: fileProgress != nil ? .medium : .regular))
                     .foregroundStyle(Palette.paper)
                     .contentTransition(.symbolEffect(.replace))
                     .opacity(busy ? 0.4 : 1)
@@ -131,7 +195,7 @@ private struct MicButton: View {
         .buttonStyle(PressStyle())
         .onHover { h in withAnimation(.easeOut(duration: 0.15)) { hover = h } }
         .animation(.easeOut(duration: 0.09), value: level)
-        .help(recording ? "Stop and show the transcript" : "Start transcribing")
+        .help(fileProgress != nil ? "Stop transcribing this file" : compact ? "Stop and show the transcript" : "Start transcribing")
     }
 }
 
@@ -154,8 +218,9 @@ private struct WordsView: View {
                     .font(Typography.garamondFont(19))
                     .foregroundStyle(word.final ? Palette.ink : Palette.ink.opacity(0.45))
                     .fixedSize()
+                    // Words leave at the top, where the mask has already faded them; animating that would leave ghosts.
                     .transition(.asymmetric(insertion: .modifier(active: Arrive(on: false), identity: Arrive(on: true)),
-                                            removal: .opacity))
+                                            removal: .identity))
             }
         }
         .animation(.easeOut(duration: 0.4), value: words)

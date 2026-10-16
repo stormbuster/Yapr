@@ -50,6 +50,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         #endif
     }
 
+    /// Finder: Open With › Yapr, or files dropped on the app icon.
+    func application(_ application: NSApplication, open urls: [URL]) {
+        if model.transcribeFiles(urls), !panel.isVisible { panel.show() }
+    }
+
     /// Ask on first launch rather than on the first click of the microphone, so Yapr is listed under
     /// Privacy & Security › Microphone from the start and the first recording is not interrupted by the prompt.
     private static func requestMicrophoneOnFirstRun() {

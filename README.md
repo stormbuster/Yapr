@@ -8,12 +8,19 @@ A tiny macOS menu bar app that transcribes what you say, live and on-device, wit
   being revised, ink once settled) and rings pulse with your voice.
 - **Click again**: recording stops, the transcript opens in a borderless page set in EB Garamond, and
   the circle returns to the microphone.
+- **Drop audio or video files** on the circle (or use Finder's Open With › Yapr): words drift in the same way
+  while Phonon 2 works through the file, a ring around the button shows progress, and the button cancels.
+  Any format AVFoundation reads works (mp3, m4a, wav, aiff, flac, mp4, mov, …); the transcript is saved as
+  `<file name>.txt`. Files of any length are read in 25–30 s chunks cut at pauses, so memory stays flat; an hour
+  of audio takes well under a minute.
 - **Drag the circle** away from the menu bar to keep it floating; drop it back near the icon to re-attach.
 - **Right-click** the icon for Settings and Quit. Settings: input device, output device, pass-through
   (hear yourself, use headphones) and the transcripts folder (default `~/Documents/Yapr`).
 
 Transcripts are plain UTF-8 text files, `Yapr <date> at <time>.txt`, written as you speak, so nothing is
-lost if the app quits mid-sentence. Paragraphs break at pauses longer than 3.5 s.
+lost if the app quits mid-sentence. Paragraphs break at pauses longer than 3.5 s (2.5 s in files). Recording can run
+for as long as you like: only the current phrase is held in memory, the Mac is kept from idle-sleeping while Yapr
+listens, and unplugging or switching the microphone restarts capture on the new default.
 
 ## Build
 
@@ -44,7 +51,8 @@ continuous speech, the phrase is committed: appended to the file and never revis
 
 ## Testing without a microphone
 
-Debug builds include a harness that "records" an audio file in real time and snapshots each stage:
+Debug builds include a harness that "records" an audio file in real time (`YAPR_FEED`), or runs the drop path
+on a file (`YAPR_FILE`), and snapshots each stage:
 
 ```bash
 say -o /tmp/speech.aiff "Hello from Yapr." && afconvert -f WAVE -d LEF32@16000 -c 1 /tmp/speech.aiff /tmp/speech.wav

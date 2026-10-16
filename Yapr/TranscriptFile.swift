@@ -6,16 +6,18 @@ final class TranscriptFile {
     private let handle: FileHandle
     private(set) var text = ""
 
-    init(folder: URL, date: Date = Date()) throws {
+    /// `baseName` defaults to "Yapr <date> at <time>"; a transcribed file passes its own name.
+    init(folder: URL, baseName: String? = nil) throws {
         let fm = FileManager.default
         try fm.createDirectory(at: folder, withIntermediateDirectories: true)
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "yyyy-MM-dd 'at' HH.mm.ss"
-        var candidate = folder.appendingPathComponent("Yapr \(formatter.string(from: date)).txt")
+        let base = baseName ?? "Yapr \(formatter.string(from: Date()))"
+        var candidate = folder.appendingPathComponent("\(base).txt")
         var n = 2
         while fm.fileExists(atPath: candidate.path) {
-            candidate = folder.appendingPathComponent("Yapr \(formatter.string(from: date)) \(n).txt"); n += 1
+            candidate = folder.appendingPathComponent("\(base) \(n).txt"); n += 1
         }
         url = candidate
         fm.createFile(atPath: url.path, contents: nil)

@@ -17,6 +17,7 @@ final class AppModel: ObservableObject {
         case ready
         case recording
         case finishing
+        case transcribingFile(name: String, progress: Double)
         case failed(String)
     }
 
@@ -29,7 +30,12 @@ final class AppModel: ObservableObject {
 
     private let settings = Settings.shared
     private let capture = AudioCapture()
+    private var transcriber: Transcriber?
     private var live: LiveTranscriber?
+    private var fileQueue: [URL] = []
+    private var fileJob: FileTranscriber?
+    private var revealBacklog: [String] = []
+    private var revealTimer: Timer?
     private var file: TranscriptFile?
     private var committed: [DisplayWord] = []
     private var hypothesis: [DisplayWord] = []
@@ -87,8 +93,9 @@ final class AppModel: ObservableObject {
                 let transcriber = try Transcriber(bundle: bundle, options: options)
                 _ = try? transcriber.transcribe((0..<16_000).map { i in 0.01 * sin(Float(i) * 0.05) })   // warm up
                 DispatchQueue.main.async {
+                    self?.transcriber = transcriber
                     self?.live = LiveTranscriber(transcriber: transcriber)
-                    self?.phase = .ready
+                    self?.becomeReady()
                 }
             } catch {
                 DispatchQueue.main.async { self?.phase = .failed("Phonon 2 did not load: \(error.localizedDescription)") }
@@ -97,7 +104,12 @@ final class AppModel: ObservableObject {
     }
 
     func retry() {
-        if live == nil { loadModel() } else { phase = .ready }
+        if live == nil { loadModel() } else { becomeReady() }
+    }
+
+    private func becomeReady() {
+        phase = .ready
+        transcribeNextFile()
     }
 
     // MARK: recording
@@ -160,9 +172,95 @@ final class AppModel: ObservableObject {
             file?.close()
             self.file = nil
             self.committed = []; self.hypothesis = []; self.words = []
-            self.phase = .ready
             let text = file?.text ?? ""
             self.onTranscript?(text, text.isEmpty ? nil : file?.url)
+            self.becomeReady()
+        }
+    }
+
+    // MARK: audio and video files
+
+    /// Queues dropped or opened files; they are transcribed one after another whenever Yapr is not recording.
+    /// Returns false when none of them is an audio or video file.
+    @discardableResult
+    func transcribeFiles(_ urls: [URL]) -> Bool {
+        let media = urls.filter(MediaDecoder.canRead)
+        guard !media.isEmpty else {
+            if phase == .ready { phase = .failed("Yapr transcribes audio and video files.") }
+            return false
+        }
+        fileQueue.append(contentsOf: media)
+        if phase == .ready { transcribeNextFile() }
+        return true
+    }
+
+    private func transcribeNextFile() {
+        guard phase == .ready, let transcriber, !fileQueue.isEmpty else { return }
+        let url = fileQueue.removeFirst()
+        let name = url.deletingPathExtension().lastPathComponent
+        let file: TranscriptFile
+        do { file = try TranscriptFile(folder: settings.transcriptsFolder, baseName: name) } catch {
+            phase = .failed(error.localizedDescription); return
+        }
+        let job = FileTranscriber(transcriber: transcriber)
+        fileJob = job
+        committed = []; hypothesis = []; words = []; revealBacklog = []
+        phase = .transcribingFile(name: name, progress: 0)
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let started = url.startAccessingSecurityScopedResource()
+            defer { if started { url.stopAccessingSecurityScopedResource() } }
+            var failure: Error?
+            do {
+                try job.run(url,
+                            onText: { text in DispatchQueue.main.async { file.append(text) } },
+                            onWords: { words in DispatchQueue.main.async { self?.reveal(words) } },
+                            onProgress: { p in
+                                DispatchQueue.main.async {
+                                    if case .transcribingFile(name, let old) = self?.phase, p - old >= 0.005 || p == 1 {
+                                        self?.phase = .transcribingFile(name: name, progress: p)
+                                    }
+                                }
+                            })
+            } catch is FileTranscriber.Cancelled {
+            } catch { failure = error }
+            DispatchQueue.main.async { self?.finishFile(file, failure: failure) }
+        }
+    }
+
+    /// Stops the file being transcribed; what was recognised so far is kept and shown.
+    func cancelFile() { fileJob?.cancel() }
+
+    private func finishFile(_ file: TranscriptFile, failure: Error?) {
+        fileJob = nil
+        // Let the last words drift in before the page opens.
+        let wait = min(1.2, 0.35 + Double(revealBacklog.count) * 0.075)
+        DispatchQueue.main.asyncAfter(deadline: .now() + wait) { [weak self] in
+            guard let self else { return }
+            self.revealTimer?.invalidate(); self.revealTimer = nil; self.revealBacklog = []
+            self.committed = []; self.hypothesis = []; self.words = []
+            file.close()
+            if let failure, file.text.isEmpty { self.phase = .failed(failure.localizedDescription); return }
+            self.onTranscript?(file.text, file.text.isEmpty ? nil : file.url)
+            self.becomeReady()
+        }
+    }
+
+    /// Phonon 2 recognises half a minute of a file in a blink, so words are paced into the circle one at a time, as in
+    /// live speech. When recognition races ahead, older waiting words are skipped so the circle stays near the
+    /// current position in the file.
+    private func reveal(_ newWords: [String]) {
+        revealBacklog.append(contentsOf: newWords)
+        guard revealTimer == nil else { return }
+        revealTimer = Timer.scheduledTimer(withTimeInterval: 0.075, repeats: true) { [weak self] timer in
+            guard let self, !self.revealBacklog.isEmpty else { timer.invalidate(); self?.revealTimer = nil; return }
+            if self.revealBacklog.count > 24 {
+                self.revealBacklog.removeFirst(self.revealBacklog.count - 24)
+                self.committed = []          // a jump: start the circle afresh rather than splice unrelated text
+            }
+            self.committed.append(DisplayWord(id: self.makeID(), text: self.revealBacklog.removeFirst(), final: true))
+            if self.committed.count > AppModel.visibleWords { self.committed.removeFirst(self.committed.count - AppModel.visibleWords) }
+            self.words = self.committed
         }
     }
 

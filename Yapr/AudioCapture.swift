@@ -27,9 +27,12 @@ final class AudioCapture {
     private let targetFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16_000, channels: 1, interleaved: false)!
     private var monitor: PassThroughMonitor?
     private let monitorLock = OSAllocatedUnfairLock()
+    private var configObserver: NSObjectProtocol?
+    private var activity: NSObjectProtocol?
+    private var lastStart: (input: String, output: String, passThrough: Bool)?
 
     func start(inputUID: String, outputUID: String, passThrough: Bool) throws {
-        stop()
+        teardown()
         let engine = AVAudioEngine()
         let input = engine.inputNode
         if let device = AudioDevices.deviceID(forUID: inputUID) {
@@ -49,9 +52,41 @@ final class AudioCapture {
         try engine.start()
         self.engine = engine
         if passThrough { setPassThrough(true, outputUID: outputUID) }
+        lastStart = (inputUID, outputUID, passThrough)
+
+        // A device unplugged or switched mid-recording stops the engine; start again on whatever is now available.
+        configObserver = NotificationCenter.default.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine,
+                                                                queue: .main) { [weak self] _ in self?.restart() }
+        // Long sessions: keep the Mac from idle-sleeping while it listens.
+        if activity == nil {
+            activity = ProcessInfo.processInfo.beginActivity(options: [.idleSystemSleepDisabled, .userInitiated],
+                                                             reason: "Yapr is transcribing")
+        }
+    }
+
+    private func restart() {
+        guard let p = lastStart else { return }
+        let keepActivity = activity
+        activity = nil
+        teardown()
+        activity = keepActivity
+        do { try start(inputUID: p.input, outputUID: p.output, passThrough: p.passThrough) }
+        catch {
+            // The chosen device is gone: fall back to the system default input.
+            try? start(inputUID: "", outputUID: p.output, passThrough: p.passThrough)
+        }
     }
 
     func stop() {
+        teardown()
+        lastStart = nil
+        if let activity { ProcessInfo.processInfo.endActivity(activity) }
+        activity = nil
+    }
+
+    private func teardown() {
+        if let configObserver { NotificationCenter.default.removeObserver(configObserver) }
+        configObserver = nil
         setPassThrough(false, outputUID: "")
         engine?.inputNode.removeTap(onBus: 0)
         engine?.stop()

@@ -11,8 +11,10 @@ enum DebugHarness {
 
     static func runIfRequested(model: AppModel, panel: CirclePanelController, settings: SettingsWindowController) {
         let env = ProcessInfo.processInfo.environment
-        guard let dir = env["YAPR_SNAPSHOTS"], let feedPath = env["YAPR_FEED"] else { return }
+        guard let dir = env["YAPR_SNAPSHOTS"] else { return }
         let out = URL(fileURLWithPath: dir, isDirectory: true)
+        if let file = env["YAPR_FILE"] { runFile(URL(fileURLWithPath: file), model: model, panel: panel, out: out); return }
+        guard let feedPath = env["YAPR_FEED"] else { return }
         cancellable = model.$phase.first { $0 == .ready }.sink { _ in
             cancellable = nil
             let samples = read(URL(fileURLWithPath: feedPath))
@@ -33,6 +35,34 @@ enum DebugHarness {
             after(0.8 + seconds + 4.5) {
                 snap(settings.window?.contentView, out, "6-settings")
                 print("YAPR_HARNESS_DONE")
+            }
+        }
+    }
+
+    /// YAPR_FILE=<audio or video>: the drop path, snapshotting the circle while words drift in.
+    private static func runFile(_ url: URL, model: AppModel, panel: CirclePanelController, out: URL) {
+        cancellable = model.$phase.first { $0 == .ready }.sink { _ in
+            cancellable = nil
+            panel.show()
+            let t0 = Date()
+            model.transcribeFiles([url])
+            var shots = 0
+            Timer.scheduledTimer(withTimeInterval: 0.25, repeats: true) { timer in
+                if case .transcribingFile(_, let p) = model.phase {
+                    if shots < 4, model.words.count > 3 * (shots + 1) { shots += 1; snap(panel.contentView, out, "file-\(shots)") }
+                    _ = p
+                } else if model.phase == .ready {
+                    timer.invalidate()
+                    print("YAPR_FILE_DONE \(String(format: "%.2f", Date().timeIntervalSince(t0))) s")
+                    after(0.8) {
+                        snap(panel.contentView, out, "file-after")
+                        snap(TranscriptWindowController.open.last?.window?.contentView, out, "file-transcript")
+                        print("YAPR_HARNESS_DONE")
+                        fflush(stdout)
+                    }
+                } else if case .failed(let m) = model.phase {
+                    timer.invalidate(); print("YAPR_FILE_FAILED \(m)"); fflush(stdout)
+                }
             }
         }
     }
