@@ -9,7 +9,7 @@ final class TranscriptWindowController: NSWindowController, NSWindowDelegate {
     private let textView = MarginDragTextView()
     private let scrollView = NSScrollView()
     private let text: String
-    private let copyButton = CircleIconButton(symbol: "doc.on.doc", label: "Copy transcript")
+    private let copyButton = CircleIconButton(symbol: "yapr.copy", label: "Copy transcript")
     private let closeButton = CircleIconButton(symbol: "xmark", label: "Close")
     private var copiedReset: DispatchWorkItem?
     private static let measure: CGFloat = 520        // the text column: about 66 characters a line
@@ -148,7 +148,7 @@ final class TranscriptWindowController: NSWindowController, NSWindowDelegate {
         copyButton.setAccessibilityLabel("Copied")
         copiedReset?.cancel()
         let reset = DispatchWorkItem { [weak self] in
-            self?.copyButton.setSymbol("doc.on.doc")
+            self?.copyButton.setSymbol("yapr.copy")
             self?.copyButton.setAccessibilityLabel("Copy transcript")
         }
         copiedReset = reset
