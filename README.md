@@ -3,6 +3,8 @@
 A tiny macOS menu bar app that transcribes what you say, live and on-device, with
 [Phonon 2](https://www.fermionresearch.com/models/phonon-2/) on the Neural Engine.
 
+![Yapr's round panel under the menu bar showing words as they are spoken, beside the transcript page set in EB Garamond](docs/screenshot.webp)
+
 - **Click** the menu bar icon: a round panel opens with a big microphone.
 - **Click the microphone**: Yapr listens; recognised words drift into the circle (grey while still
   being revised, ink once settled) and rings pulse with your voice.
