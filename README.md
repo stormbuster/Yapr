@@ -59,6 +59,10 @@ say -o /tmp/speech.aiff "Hello from Yapr." && afconvert -f WAVE -d LEF32@16000 -
 YAPR_SNAPSHOTS=/tmp/snaps YAPR_FEED=/tmp/speech.wav build/Build/Products/Debug/Yapr.app/Contents/MacOS/Yapr -transcriptsFolder /tmp/transcripts
 ```
 
+## Licence
+
+Yapr is MIT licensed (see `LICENSE`). The fonts, the model and the Swift package keep their own licences, below.
+
 ## Credits
 
 - Phonon 2 by Fermion Research, weights CC-BY-4.0 (derived from NVIDIA Parakeet TDT 0.6B v3);
