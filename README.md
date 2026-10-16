@@ -20,10 +20,11 @@ lost if the app quits mid-sentence. Paragraphs break at pauses longer than 3.5 s
 Requires an Apple silicon Mac, macOS 15 or later, Xcode 16+ and [XcodeGen](https://github.com/yonaskolb/XcodeGen).
 
 ```bash
-xcodegen generate
-xcodebuild -project Yapr.xcodeproj -scheme Yapr -configuration Release -derivedDataPath build build
-open build/Build/Products/Release/Yapr.app
+scripts/release.sh
 ```
+
+This generates the project, builds Release, quits a running Yapr, installs to `/Applications/Yapr.app` and
+launches it. Pass another folder (`scripts/release.sh ~/Applications`) or `--no-launch` as needed.
 
 On first launch Yapr downloads the Phonon-2 Core ML model (330 MB, pinned revision, SHA-256 checked) from
 [FermionResearch/Phonon-2-CoreML](https://huggingface.co/FermionResearch/Phonon-2-CoreML) into
