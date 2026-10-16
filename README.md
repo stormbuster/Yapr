@@ -11,7 +11,8 @@ A tiny macOS menu bar app that transcribes what you say, live and on-device, wit
 - **Click the microphone**: Yapr listens; recognised words drift into the circle (grey while still
   being revised, ink once settled) and rings pulse with your voice.
 - **Click again**: recording stops, the transcript opens in a borderless page set in EB Garamond, and
-  the circle returns to the microphone.
+  the circle returns to the microphone. The copy button at the top right puts the whole transcript on the
+  clipboard; Esc or the × closes the page.
 - **Drop audio or video files** on the circle (or use Finder's Open With › Yapr): words drift in the same way
   while Phonon 2 works through the file, a ring around the button shows progress, and the button cancels.
   Any format AVFoundation reads works (mp3, m4a, wav, aiff, flac, mp4, mov, …); the transcript is saved as

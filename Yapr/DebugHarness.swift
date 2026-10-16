@@ -65,6 +65,19 @@ enum DebugHarness {
                     after(0.8) {
                         snap(panel.contentView, out, "file-after")
                         snap(TranscriptWindowController.open.last?.window?.contentView, out, "file-transcript")
+                        if let controller = TranscriptWindowController.open.last {
+                            let b = controller.debugButtons()
+                            let saved = NSPasteboard.general.string(forType: .string)   // put the user's clipboard back afterwards
+                            b.copyAction()
+                            let copied = NSPasteboard.general.string(forType: .string) ?? ""
+                            NSPasteboard.general.clearContents()
+                            if let saved { NSPasteboard.general.setString(saved, forType: .string) }
+                            print("YAPR_COPIED \(copied.count) chars, starts: \(copied.prefix(40))")
+                            b.close.debugShow(.hover)
+                            snap(controller.window?.contentView, out, "buttons-copied-closehover")
+                            b.close.debugShow(.pressed)
+                            snap(controller.window?.contentView, out, "buttons-closepressed")
+                        }
                         print("YAPR_HARNESS_DONE")
                         fflush(stdout)
                     }

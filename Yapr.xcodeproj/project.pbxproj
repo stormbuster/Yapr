@@ -27,6 +27,7 @@
 		9B8AE6BB7FA9D8FCA41637DE /* LiveTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D2A6513184396722DF4613 /* LiveTranscriber.swift */; };
 		B0B880E6F12D8144FF247AEE /* TranscriptWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF6FD3C4869CB6D31D56B976 /* TranscriptWindow.swift */; };
 		C2C8F6AC0D19A82C2478DFF2 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7717B61E2A0048C88470374 /* Settings.swift */; };
+		F793A8B6DD879A9F7B8C46AA /* IconButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6D0754115BB37263BC3F60D /* IconButton.swift */; };
 		FF97A54F8324C5332C2D5A16 /* AudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4359566522ECB8B0DF0F9A94 /* AudioCapture.swift */; };
 /* End PBXBuildFile section */
 
@@ -45,6 +46,7 @@
 		911B806B7914BC4AEAB21E34 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
 		9E26144F4D59B8A46441C86E /* EBGaramond-VF.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "EBGaramond-VF.ttf"; sourceTree = "<group>"; };
 		A05FBD8D0FD9ED3F4DD30BB8 /* Yapr.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Yapr.entitlements; sourceTree = "<group>"; };
+		A6D0754115BB37263BC3F60D /* IconButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconButton.swift; sourceTree = "<group>"; };
 		A711769F1A0E041BBC1E8062 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		A7717B61E2A0048C88470374 /* Settings.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Settings.swift; sourceTree = "<group>"; };
 		C2B16D89DF89E7E7C1945BD0 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = wrapper.icon; path = AppIcon.icon; sourceTree = "<group>"; };
@@ -97,6 +99,7 @@
 				748971BC2B01ECAB096B7F99 /* CircleView.swift */,
 				413AF7A6D08308207D2BA4FB /* DebugHarness.swift */,
 				8E43F40FA058A8AF0FD6F7CA /* FileTranscriber.swift */,
+				A6D0754115BB37263BC3F60D /* IconButton.swift */,
 				A711769F1A0E041BBC1E8062 /* Info.plist */,
 				F5D2A6513184396722DF4613 /* LiveTranscriber.swift */,
 				C5E7DFC7541E79D5D900BDCF /* MediaDecoder.swift */,
@@ -216,6 +219,7 @@
 				383E3E75D139034A13CD8EE7 /* CircleView.swift in Sources */,
 				35253290FE030FE750F1350A /* DebugHarness.swift in Sources */,
 				1939A56509DA3B6DA3C1E68D /* FileTranscriber.swift in Sources */,
+				F793A8B6DD879A9F7B8C46AA /* IconButton.swift in Sources */,
 				9B8AE6BB7FA9D8FCA41637DE /* LiveTranscriber.swift in Sources */,
 				6ED1B3EA7F0D35ED296AE76E /* MediaDecoder.swift in Sources */,
 				668C65E8FF465C532966A42C /* ModelStore.swift in Sources */,

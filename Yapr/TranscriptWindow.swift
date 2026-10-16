@@ -1,13 +1,17 @@
 import AppKit
 
 /// The transcript, set in EB Garamond on paper: a borderless window after stormbuster/borderless (full-size content view,
-/// hidden title bar, draggable from anywhere that is not text), a black close glyph top right, generous margins, and a
-/// scroll bar that only appears while scrolling.
+/// hidden title bar, draggable from anywhere that is not text), black copy and close glyphs top right, generous margins,
+/// and a scroll bar that only appears while scrolling.
 final class TranscriptWindowController: NSWindowController, NSWindowDelegate {
     private(set) static var open: [TranscriptWindowController] = []
 
     private let textView = MarginDragTextView()
     private let scrollView = NSScrollView()
+    private let text: String
+    private let copyButton = CircleIconButton(symbol: "doc.on.doc", label: "Copy transcript")
+    private let closeButton = CircleIconButton(symbol: "xmark", label: "Close")
+    private var copiedReset: DispatchWorkItem?
     private static let measure: CGFloat = 520        // the text column: about 66 characters a line
     private static let minSideMargin: CGFloat = 64
     private static let verticalMargin: CGFloat = 76   // NSTextView applies it above and below the text
@@ -21,6 +25,7 @@ final class TranscriptWindowController: NSWindowController, NSWindowDelegate {
     }
 
     private init(text: String, fileURL: URL?) {
+        self.text = text
         let window = BorderlessWindow(contentRect: NSRect(x: 0, y: 0, width: 700, height: 780),
                                       styleMask: [.titled, .closable, .resizable, .miniaturizable, .fullSizeContentView],
                                       backing: .buffered, defer: false)
@@ -78,12 +83,17 @@ final class TranscriptWindowController: NSWindowController, NSWindowDelegate {
         scrollView.documentView = textView
         container.addSubview(scrollView)
 
-        let close = CloseButton()
-        close.target = window
-        close.action = #selector(NSWindow.performClose(_:))
-        close.frame = NSRect(x: container.bounds.maxX - 22 - 28, y: container.bounds.maxY - 22 - 28, width: 28, height: 28)
-        close.autoresizingMask = [.minXMargin, .minYMargin]
-        container.addSubview(close)
+        // Top right, right to left: close, then copy.
+        let size = CircleIconButton.size, inset: CGFloat = 20, gap: CGFloat = 4
+        closeButton.frame.origin = NSPoint(x: container.bounds.maxX - inset - size, y: container.bounds.maxY - inset - size)
+        copyButton.frame.origin = NSPoint(x: closeButton.frame.minX - gap - size, y: closeButton.frame.minY)
+        for button in [copyButton, closeButton] {
+            button.autoresizingMask = [.minXMargin, .minYMargin]
+            container.addSubview(button)
+        }
+        closeButton.onPress = { [weak window] in window?.performClose(nil) }
+        copyButton.onPress = { [weak self] in self?.copyTranscript() }
+        copyButton.isHidden = text.isEmpty
 
         layoutMargins()
     }
@@ -129,6 +139,28 @@ final class TranscriptWindowController: NSWindowController, NSWindowDelegate {
         textView.invalidateTextContainerOrigin()
     }
 
+    /// Copies the whole transcript as plain text, paragraphs separated by a blank line as in the file, and briefly
+    /// shows a check mark.
+    private func copyTranscript() {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+        copyButton.setSymbol("checkmark")
+        copyButton.setAccessibilityLabel("Copied")
+        copiedReset?.cancel()
+        let reset = DispatchWorkItem { [weak self] in
+            self?.copyButton.setSymbol("doc.on.doc")
+            self?.copyButton.setAccessibilityLabel("Copy transcript")
+        }
+        copiedReset = reset
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.4, execute: reset)
+    }
+
+    #if DEBUG
+    func debugButtons() -> (copy: CircleIconButton, close: CircleIconButton, copyAction: () -> Void) {
+        (copyButton, closeButton, { [weak self] in self?.copyTranscript() })
+    }
+    #endif
+
     func windowDidResize(_ notification: Notification) { layoutMargins() }
 
     func windowWillClose(_ notification: Notification) {
@@ -158,36 +190,4 @@ private final class MarginDragTextView: NSTextView {
             super.mouseDown(with: event)
         }
     }
-}
-
-/// A plain black × glyph.
-private final class CloseButton: NSButton {
-    private var tracking: NSTrackingArea?
-
-    init() {
-        super.init(frame: .zero)
-        isBordered = false
-        bezelStyle = .regularSquare
-        imagePosition = .imageOnly
-        let config = NSImage.SymbolConfiguration(pointSize: 15, weight: .medium)
-        image = NSImage(systemSymbolName: "xmark", accessibilityDescription: "Close")?.withSymbolConfiguration(config)
-        contentTintColor = Palette.inkNS
-        alphaValue = 0.85
-        setAccessibilityLabel("Close")
-        toolTip = "Close"
-    }
-
-    required init?(coder: NSCoder) { fatalError() }
-
-    override func updateTrackingAreas() {
-        super.updateTrackingAreas()
-        if let tracking { removeTrackingArea(tracking) }
-        let area = NSTrackingArea(rect: bounds, options: [.mouseEnteredAndExited, .activeAlways], owner: self)
-        addTrackingArea(area)
-        tracking = area
-    }
-
-    override func mouseEntered(with event: NSEvent) { animator().alphaValue = 1 }
-    override func mouseExited(with event: NSEvent) { animator().alphaValue = 0.85 }
-    override func acceptsFirstMouse(for event: NSEvent?) -> Bool { true }
 }
