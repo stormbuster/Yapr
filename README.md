@@ -65,3 +65,7 @@ YAPR_SNAPSHOTS=/tmp/snaps YAPR_FEED=/tmp/speech.wav build/Build/Products/Debug/Y
   phonon-coreml under Apache 2.0.
 - EB Garamond by Georg Duffner and Octavio Pardo, SIL Open Font License (`Yapr/Fonts/OFL.txt`).
 - The borderless transcript window follows [stormbuster/borderless](https://github.com/stormbuster/borderless).
+
+This repository contains no Phonon code or weights: the Swift package is fetched by Swift Package Manager and the
+model is downloaded from Hugging Face on first launch. If you distribute a built Yapr.app, it statically includes
+phonon-coreml, so ship its Apache 2.0 licence and NOTICE with it, and credit the model as above (CC-BY-4.0).
