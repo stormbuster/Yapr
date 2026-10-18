@@ -132,6 +132,7 @@ final class AppModel: ObservableObject {
     }
 
     private func requestMicrophoneThenStart() {
+        AudioCapture.log("microphone authorization: \(AVCaptureDevice.authorizationStatus(for: .audio).rawValue)")
         switch AVCaptureDevice.authorizationStatus(for: .audio) {
         case .authorized: start()
         case .notDetermined:

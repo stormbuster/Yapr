@@ -12,6 +12,7 @@ enum DebugHarness {
 
     static func runIfRequested(model: AppModel, panel: CirclePanelController, settings: SettingsWindowController) {
         let env = ProcessInfo.processInfo.environment
+        if env["YAPR_MIC_TEST"] != nil { runMicTest(model: model); return }
         guard let dir = env["YAPR_SNAPSHOTS"] else { return }
         let t0 = Date()
         phaseLog = model.$phase.removeDuplicates { a, b in
@@ -87,6 +88,24 @@ enum DebugHarness {
             }
         }
     }
+
+    /// YAPR_MIC_TEST=1 YAPR_MIC_LOG=<file>: record from the real microphone for 10 s, log what happens, then quit.
+    private static func runMicTest(model: AppModel) {
+        var maxLevel: Float = 0
+        levelLog = model.$level.sink { maxLevel = max(maxLevel, $0) }
+        // @Published delivers before the property changes, so act on the next turn of the run loop.
+        cancellable = model.$phase.first { $0 == .ready }.receive(on: DispatchQueue.main).sink { _ in
+            cancellable = nil
+            AudioCapture.log("mic test: starting")
+            model.toggleRecording()
+            after(10) {
+                AudioCapture.log("mic test: phase=\(model.phase) maxLevel=\(maxLevel) words=\(model.words.map(\.text).joined(separator: " "))")
+                model.toggleRecording()
+                after(3) { AudioCapture.log("mic test: done"); NSApp.terminate(nil) }
+            }
+        }
+    }
+    private static var levelLog: AnyCancellable?
 
     private static func after(_ s: Double, _ f: @escaping () -> Void) { DispatchQueue.main.asyncAfter(deadline: .now() + s, execute: f) }
 

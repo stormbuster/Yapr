@@ -45,9 +45,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         model.loadModel()
         AppDelegate.requestMicrophoneOnFirstRun()
+        // Open the circle on launch, once the status item has been placed in the menu bar so it can sit under it.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
+            guard let self, !self.panel.isVisible else { return }
+            self.panel.show()
+        }
         #if DEBUG
         DebugHarness.runIfRequested(model: model, panel: panel, settings: settingsWindow)
         #endif
+    }
+
+    /// Opening Yapr again while it runs (Finder, Launchpad, Spotlight) brings the circle back.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows flag: Bool) -> Bool {
+        if !panel.isVisible { panel.show() }
+        return false
     }
 
     /// Finder: Open With › Yapr, or files dropped on the app icon.
