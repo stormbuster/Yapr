@@ -96,12 +96,14 @@ enum DebugHarness {
         // @Published delivers before the property changes, so act on the next turn of the run loop.
         cancellable = model.$phase.first { $0 == .ready }.receive(on: DispatchQueue.main).sink { _ in
             cancellable = nil
-            AudioCapture.log("mic test: starting")
+            AudioCapture.log("mic test: starting; saved input=\(Settings.shared.inputDeviceUID) name=\(Settings.shared.inputDeviceName)")
             model.toggleRecording()
-            after(10) {
+            after(2) { AudioCapture.log("mic test: double tap -> \(model.debugDoubleTap())") }
+            let seconds = Double(ProcessInfo.processInfo.environment["YAPR_MIC_SECONDS"] ?? "") ?? 10
+            after(seconds) {
                 AudioCapture.log("mic test: phase=\(model.phase) maxLevel=\(maxLevel) words=\(model.words.map(\.text).joined(separator: " "))")
-                model.toggleRecording()
-                after(3) { AudioCapture.log("mic test: done"); NSApp.terminate(nil) }
+                if model.phase == .recording { model.toggleRecording() }
+                after(3) { AudioCapture.log("mic test: done, phase=\(model.phase)"); NSApp.terminate(nil) }
             }
         }
     }

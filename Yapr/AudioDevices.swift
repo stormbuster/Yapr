@@ -19,6 +19,24 @@ enum AudioDevices {
         return all().first { $0.uid == uid }?.id
     }
 
+    /// The connected device a saved choice refers to. Exact UID first; then, because a USB device's UID embeds the
+    /// port it is plugged into (AppleUSBAudioEngine:vendor:product:location:n), the same device on another port;
+    /// then a device with the same name.
+    static func match(uid: String, name: String, in devices: [AudioDevice]) -> AudioDevice? {
+        guard !uid.isEmpty else { return nil }
+        if let exact = devices.first(where: { $0.uid == uid }) { return exact }
+        let key = portIndependentKey(uid)
+        if let moved = devices.first(where: { portIndependentKey($0.uid) == key }) { return moved }
+        return name.isEmpty ? nil : devices.first { $0.name == name }
+    }
+
+    private static func portIndependentKey(_ uid: String) -> String {
+        var parts = uid.split(separator: ":", omittingEmptySubsequences: false).map(String.init)
+        guard uid.hasPrefix("AppleUSBAudioEngine:"), parts.count >= 5 else { return uid }
+        parts[parts.count - 2] = "*"
+        return parts.joined(separator: ":")
+    }
+
     static func startObserving() {
         var address = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDevices,
                                                  mScope: kAudioObjectPropertyScopeGlobal,

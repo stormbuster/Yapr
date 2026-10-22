@@ -3,18 +3,31 @@ import AudioToolbox
 import os
 
 enum AudioCaptureError: LocalizedError {
-    case deviceUnavailable, noInput
+    case deviceUnavailable, noInput, engine(String)
     var errorDescription: String? {
         switch self {
         case .deviceUnavailable: return "The selected audio device could not be opened."
         case .noInput: return "No microphone input is available."
+        case .engine(let reason): return "The microphone could not be opened (\(reason))."
         }
+    }
+}
+
+/// Runs AVAudioEngine work that may raise an Objective-C exception, as a Swift error instead.
+private func objc(_ block: () -> Void) throws {
+    if let error = YaprCatchException(block) {
+        AudioCapture.log("exception: \(error.localizedDescription)")
+        throw AudioCaptureError.engine(error.localizedDescription)
     }
 }
 
 /// Captures the microphone, hands out mono 16 kHz samples for Phonon-2 and an input level for the UI, and optionally
 /// plays the microphone back on a chosen output device (pass-through). Capture and playback run on separate engines so
 /// input and output can be different devices.
+///
+/// Devices come and go (USB hubs reset, cameras sleep, HDMI renegotiates), so capture is defensive: the tap takes
+/// whatever format the hardware delivers and adapts to it, AVAudioEngine's exceptions become errors, and a watchdog
+/// rebuilds capture when no audio has arrived for a few seconds, then gives up with a message instead of hanging.
 final class AudioCapture {
     /// DEBUG builds with YAPR_MIC_LOG=<file> set write capture events there.
     static func log(_ message: @autoclosure () -> String) {
@@ -25,45 +38,41 @@ final class AudioCapture {
         else { FileManager.default.createFile(atPath: path, contents: Data(line.utf8)) }
         #endif
     }
-    private var buffers = 0
+
     /// Called on the audio tap thread.
     var onSamples: (([Float]) -> Void)?
     /// 0...1, called on the audio tap thread.
     var onLevel: ((Float) -> Void)?
+    /// Main queue: capture failed and could not be recovered; recording should stop with this message.
+    var onFailure: ((String) -> Void)?
 
     private var engine: AVAudioEngine?
-    private var converter: AVAudioConverter?
-    private var monoFormat: AVAudioFormat?
     private let targetFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16_000, channels: 1, interleaved: false)!
     private var monitor: PassThroughMonitor?
     private let monitorLock = OSAllocatedUnfairLock()
     private var configObserver: NSObjectProtocol?
     private var activity: NSObjectProtocol?
     private var lastStart: (input: String, output: String, passThrough: Bool)?
-    private var tapFormat: AVAudioFormat?
+    private var watchdog: Timer?
+    private var startedAt = Date()
+    private var rebuilds = 0
     private var recoveries: [Date] = []
 
+    // Shared with the tap thread, under `state`.
+    private let state = OSAllocatedUnfairLock()
+    private var sourceFormat: AVAudioFormat?
+    private var monoFormat: AVAudioFormat?
+    private var converter: AVAudioConverter?
+    private var lastBufferAt = Date.distantPast
+    private var buffers = 0
+
+    private static let silenceLimit: TimeInterval = 3   // seconds without a buffer before capture counts as dead
+
     func start(inputUID: String, outputUID: String, passThrough: Bool) throws {
-        teardown()
-        let engine = AVAudioEngine()
-        let input = engine.inputNode
-        if let device = AudioDevices.deviceID(forUID: inputUID) {
-            try AudioCapture.setDevice(device, on: input)
-        }
-        let hwFormat = input.outputFormat(forBus: 0)
-        AudioCapture.log("start input=\(inputUID.isEmpty ? "default" : inputUID) format=\(hwFormat)")
-        guard hwFormat.sampleRate > 0, hwFormat.channelCount > 0 else { throw AudioCaptureError.noInput }
-
-        installTap(on: input, format: hwFormat)
-        engine.prepare()
-        try engine.start()
-        self.engine = engine
-        if passThrough { setPassThrough(true, outputUID: outputUID) }
-        lastStart = (inputUID, outputUID, passThrough)
-
-        recoveries = []
-        configObserver = NotificationCenter.default.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine,
-                                                                queue: .main) { [weak self] _ in self?.configurationChanged() }
+        try open(inputUID: inputUID, outputUID: outputUID, passThrough: passThrough)
+        rebuilds = 0
+        watchdog?.invalidate()
+        watchdog = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.checkHealth() }
         // Long sessions: keep the Mac from idle-sleeping while it listens.
         if activity == nil {
             activity = ProcessInfo.processInfo.beginActivity(options: [.idleSystemSleepDisabled, .userInitiated],
@@ -71,52 +80,96 @@ final class AudioCapture {
         }
     }
 
-    private func installTap(on input: AVAudioInputNode, format: AVAudioFormat) {
-        let mono = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: format.sampleRate, channels: 1, interleaved: false)!
-        monoFormat = mono
-        converter = AVAudioConverter(from: mono, to: targetFormat)
-        tapFormat = format
-        input.installTap(onBus: 0, bufferSize: 1024, format: format) { [weak self] buffer, _ in
-            self?.process(buffer)
+    /// Builds a fresh engine on the chosen input (or the system default) and starts it.
+    private func open(inputUID: String, outputUID: String, passThrough: Bool) throws {
+        teardown()
+        let engine = AVAudioEngine()
+        var maybeInput: AVAudioInputNode?
+        try objc { maybeInput = engine.inputNode }
+        guard let input = maybeInput else { throw AudioCaptureError.noInput }
+        if let device = AudioDevices.deviceID(forUID: inputUID) {
+            try AudioCapture.setDevice(device, on: input)
+        }
+        let format = input.outputFormat(forBus: 0)
+        AudioCapture.log("open input=\(inputUID.isEmpty ? "default" : inputUID) format=\(format)")
+        guard format.sampleRate > 0, format.channelCount > 0 else { throw AudioCaptureError.noInput }
+
+        state.withLockUnchecked { sourceFormat = nil; lastBufferAt = .distantPast; buffers = 0 }
+        try installTap(on: input)
+        var startError: Error?
+        try objc {
+            engine.prepare()
+            do { try engine.start() } catch { startError = error }
+        }
+        if let startError { throw startError }
+        self.engine = engine
+        startedAt = Date()
+        lastStart = (inputUID, outputUID, passThrough)
+        recoveries = []
+        if passThrough { setPassThrough(true, outputUID: outputUID) }
+        configObserver = NotificationCenter.default.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine,
+                                                                queue: .main) { [weak self] _ in self?.configurationChanged() }
+    }
+
+    /// The tap takes the node's own format (format: nil), so it can never mismatch the hardware; `process` adapts
+    /// to whatever arrives.
+    private func installTap(on input: AVAudioInputNode) throws {
+        try objc {
+            input.installTap(onBus: 0, bufferSize: 4096, format: nil) { [weak self] buffer, _ in self?.process(buffer) }
         }
     }
 
     /// AVAudioEngine posts configuration changes freely: some USB, HDMI and virtual audio devices trigger one every
-    /// few hundred milliseconds while nothing about the input changes. Tearing the engine down for each of those closes
-    /// and reopens the microphone in a loop, and no audio ever arrives. So: while the engine still runs on the same
-    /// format, carry on. If it really stopped, start the same engine again in place, re-tapping only when the format
-    /// changed, and give up after a few tries rather than loop.
+    /// few hundred milliseconds while nothing about the input changes. While the engine still runs, carry on; the
+    /// tap adapts to a new format by itself. If it stopped, start it again in place (a few times at most); the
+    /// watchdog takes over if audio still does not come.
     private func configurationChanged() {
-        guard let engine, let p = lastStart else { return }
-        let input = engine.inputNode
-        let format = input.outputFormat(forBus: 0)
-        let sameFormat = format.sampleRate == tapFormat?.sampleRate && format.channelCount == tapFormat?.channelCount
-        AudioCapture.log("configuration change: running=\(engine.isRunning) sameFormat=\(sameFormat) format=\(format)")
-        if engine.isRunning && sameFormat { return }
-
+        guard let engine, lastStart != nil else { return }
+        AudioCapture.log("configuration change: running=\(engine.isRunning)")
+        if engine.isRunning { return }
         let now = Date()
         recoveries = recoveries.filter { now.timeIntervalSince($0) < 10 } + [now]
-        guard recoveries.count <= 3 else {
-            AudioCapture.log("configuration change: too many recoveries, rebuilding once on the default input")
-            let keepActivity = activity
-            activity = nil
-            teardown()
-            activity = keepActivity
-            try? start(inputUID: "", outputUID: p.output, passThrough: p.passThrough)
-            return
+        guard recoveries.count <= 3 else { return }
+        do {
+            try objc { engine.inputNode.removeTap(onBus: 0) }
+            try installTap(on: engine.inputNode)
+            var startError: Error?
+            try objc {
+                engine.prepare()
+                do { try engine.start() } catch { startError = error }
+            }
+            if let startError { throw startError }
+            AudioCapture.log("configuration change: restarted in place")
+        } catch {
+            AudioCapture.log("configuration change: restart failed: \(error.localizedDescription)")
         }
-        if !sameFormat {
-            guard format.sampleRate > 0, format.channelCount > 0 else { return }   // device gone; wait for the next change
-            input.removeTap(onBus: 0)
-            installTap(on: input, format: format)
+    }
+
+    /// Once a second while recording: if no audio has arrived for a while, rebuild capture from scratch (on the
+    /// chosen input, then the system default); if that does not help either, stop and say so.
+    private func checkHealth() {
+        guard let p = lastStart else { return }
+        let now = Date()
+        let last = state.withLockUnchecked { lastBufferAt }
+        // Only real audio since the last (re)open counts as recovery; opening the engine again does not.
+        if last > startedAt && now.timeIntervalSince(last) < AudioCapture.silenceLimit { rebuilds = 0; return }
+        let silent = now.timeIntervalSince(max(last, startedAt))
+        guard silent >= AudioCapture.silenceLimit else { return }
+        rebuilds += 1
+        AudioCapture.log("watchdog: no audio for \(String(format: "%.1f", silent)) s, rebuild \(rebuilds)")
+        if rebuilds <= 2 {
+            do { try open(inputUID: rebuilds == 1 ? p.input : "", outputUID: p.output, passThrough: p.passThrough); return }
+            catch { AudioCapture.log("watchdog: rebuild failed: \(error.localizedDescription)") }
+            if rebuilds < 2 { return }
         }
-        engine.prepare()
-        do { try engine.start(); AudioCapture.log("configuration change: restarted in place") }
-        catch { AudioCapture.log("configuration change: restart failed: \(error.localizedDescription)") }
+        stop()
+        onFailure?("No sound is arriving from the microphone.\nCheck it is connected, then try again.")
     }
 
     func stop() {
-        AudioCapture.log("stop after \(buffers) buffers")
+        AudioCapture.log("stop after \(state.withLockUnchecked { buffers }) buffers")
+        watchdog?.invalidate()
+        watchdog = nil
         teardown()
         lastStart = nil
         if let activity { ProcessInfo.processInfo.endActivity(activity) }
@@ -127,10 +180,13 @@ final class AudioCapture {
         if let configObserver { NotificationCenter.default.removeObserver(configObserver) }
         configObserver = nil
         setPassThrough(false, outputUID: "")
-        engine?.inputNode.removeTap(onBus: 0)
-        engine?.stop()
+        if let engine {
+            try? objc {
+                engine.inputNode.removeTap(onBus: 0)
+                engine.stop()
+            }
+        }
         engine = nil
-        converter = nil
     }
 
     var isRunning: Bool { engine?.isRunning ?? false }
@@ -140,7 +196,12 @@ final class AudioCapture {
             monitor?.stop()
             monitor = nil
         }
-        guard on, let mono = monoFormat, engine != nil else { return }
+        let mono = state.withLockUnchecked { monoFormat }
+            ?? engine.flatMap { e in
+                let f = e.inputNode.outputFormat(forBus: 0)
+                return f.sampleRate > 0 ? AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: f.sampleRate, channels: 1, interleaved: false) : nil
+            }
+        guard on, let mono, engine != nil else { return }
         let m = PassThroughMonitor(format: mono)
         do {
             try m.start(outputUID: outputUID)
@@ -150,11 +211,39 @@ final class AudioCapture {
         }
     }
 
+    #if DEBUG
+    private let debugStall = ProcessInfo.processInfo.environment["YAPR_MIC_STALL"] != nil
+    /// Test hook: tapping the same input twice makes AVAudioEngine raise an exception; it must come back as an error.
+    func debugDoubleTap() -> String {
+        guard let engine else { return "no engine" }
+        do { try installTap(on: engine.inputNode); return "no exception (unexpected)" }
+        catch { return "caught: \(error.localizedDescription)" }
+    }
+    #endif
+
     private func process(_ buffer: AVAudioPCMBuffer) {
-        buffers += 1
-        if buffers % 100 == 1 { AudioCapture.log("buffer \(buffers) frames=\(buffer.frameLength)") }
-        guard let mono = downmix(buffer) else { return }
-        let samples = UnsafeBufferPointer(start: mono.floatChannelData![0], count: Int(mono.frameLength))
+        #if DEBUG
+        if debugStall { return }   // test hook: behave like a microphone that delivers nothing
+        #endif
+        // Adapt to the format the hardware delivers; it can change when a device reconnects.
+        let (mono, converter, formatChanged): (AVAudioFormat?, AVAudioConverter?, Bool) = state.withLockUnchecked {
+            lastBufferAt = Date()
+            buffers += 1
+            if buffers % 100 == 1 { AudioCapture.log("buffer \(buffers) frames=\(buffer.frameLength) format=\(buffer.format)") }
+            var changed = false
+            if sourceFormat == nil || sourceFormat! != buffer.format {
+                changed = sourceFormat != nil
+                sourceFormat = buffer.format
+                monoFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: buffer.format.sampleRate, channels: 1, interleaved: false)
+                self.converter = monoFormat.flatMap { AVAudioConverter(from: $0, to: targetFormat) }
+            }
+            return (monoFormat, self.converter, changed)
+        }
+        if formatChanged, let p = lastStart, p.passThrough {
+            DispatchQueue.main.async { [weak self] in self?.setPassThrough(true, outputUID: p.output) }
+        }
+        guard let monoFormat = mono, let monoBuffer = downmix(buffer, to: monoFormat) else { return }
+        let samples = UnsafeBufferPointer(start: monoBuffer.floatChannelData![0], count: Int(monoBuffer.frameLength))
 
         var sum: Float = 0
         for s in samples { sum += s * s }
@@ -165,7 +254,7 @@ final class AudioCapture {
         monitorLock.withLockUnchecked { monitor?.push(samples) }
 
         guard let converter else { return }
-        let capacity = AVAudioFrameCount(Double(mono.frameLength) * targetFormat.sampleRate / mono.format.sampleRate) + 64
+        let capacity = AVAudioFrameCount(Double(monoBuffer.frameLength) * targetFormat.sampleRate / monoFormat.sampleRate) + 64
         guard let out = AVAudioPCMBuffer(pcmFormat: targetFormat, frameCapacity: capacity) else { return }
         var fed = false
         var error: NSError?
@@ -173,7 +262,7 @@ final class AudioCapture {
             if fed { status.pointee = .noDataNow; return nil }
             fed = true
             status.pointee = .haveData
-            return mono
+            return monoBuffer
         }
         if error == nil, out.frameLength > 0 {
             onSamples?(Array(UnsafeBufferPointer(start: out.floatChannelData![0], count: Int(out.frameLength))))
@@ -181,8 +270,8 @@ final class AudioCapture {
     }
 
     /// Mono at the hardware rate: the average of a stereo pair, or the first channel of a multi-channel interface.
-    private func downmix(_ buffer: AVAudioPCMBuffer) -> AVAudioPCMBuffer? {
-        guard let monoFormat, let src = buffer.floatChannelData,
+    private func downmix(_ buffer: AVAudioPCMBuffer, to monoFormat: AVAudioFormat) -> AVAudioPCMBuffer? {
+        guard let src = buffer.floatChannelData, buffer.frameLength > 0,
               let out = AVAudioPCMBuffer(pcmFormat: monoFormat, frameCapacity: buffer.frameLength) else { return nil }
         let n = Int(buffer.frameLength), channels = Int(buffer.format.channelCount)
         let dst = out.floatChannelData![0]

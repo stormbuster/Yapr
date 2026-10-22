@@ -52,6 +52,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.stormbuster.yapr
+        SWIFT_OBJC_BRIDGING_HEADER: Yapr/Yapr-Bridging-Header.h
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGN_STYLE: Manual
         ENABLE_HARDENED_RUNTIME: NO

@@ -21,6 +21,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         Typography.registerFonts()
         AudioDevices.startObserving()
+        Settings.shared.reconnectDevices()
+        NotificationCenter.default.addObserver(forName: AudioDevices.didChange, object: nil, queue: .main) { _ in
+            Settings.shared.reconnectDevices()
+        }
         NSApp.mainMenu = AppDelegate.keyEquivalentMenu()
 
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)

@@ -32,7 +32,8 @@ struct SettingsView: View {
                     Divider()
                     ForEach(inputs) { Text($0.name).tag($0.uid) }
                     if !settings.inputDeviceUID.isEmpty && !inputs.contains(where: { $0.uid == settings.inputDeviceUID }) {
-                        Text("Unavailable device").tag(settings.inputDeviceUID)
+                        Text(settings.inputDeviceName.isEmpty ? "Disconnected device" : "\(settings.inputDeviceName) (disconnected)")
+                            .tag(settings.inputDeviceUID)
                     }
                 }
                 Picker("Output", selection: $settings.outputDeviceUID) {
@@ -40,7 +41,8 @@ struct SettingsView: View {
                     Divider()
                     ForEach(outputs) { Text($0.name).tag($0.uid) }
                     if !settings.outputDeviceUID.isEmpty && !outputs.contains(where: { $0.uid == settings.outputDeviceUID }) {
-                        Text("Unavailable device").tag(settings.outputDeviceUID)
+                        Text(settings.outputDeviceName.isEmpty ? "Disconnected device" : "\(settings.outputDeviceName) (disconnected)")
+                            .tag(settings.outputDeviceUID)
                     }
                 }
                 Toggle(isOn: $settings.passThrough) {
@@ -73,7 +75,9 @@ struct SettingsView: View {
         .formStyle(.grouped)
         .frame(width: 480)
         .fixedSize(horizontal: false, vertical: true)
+        .onAppear { settings.reconnectDevices(); inputs = AudioDevices.inputs(); outputs = AudioDevices.outputs() }
         .onReceive(NotificationCenter.default.publisher(for: AudioDevices.didChange)) { _ in
+            settings.reconnectDevices()
             inputs = AudioDevices.inputs()
             outputs = AudioDevices.outputs()
         }

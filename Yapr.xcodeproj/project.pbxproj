@@ -13,6 +13,7 @@
 		2B1EE40B6042D7563B45E433 /* Typography.swift in Sources */ = {isa = PBXBuildFile; fileRef = CFF758A7C94E600570BE8BB7 /* Typography.swift */; };
 		2F23EE3BB130550180E56B25 /* TranscriptFile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0A79B30E4F8A950A08894739 /* TranscriptFile.swift */; };
 		35253290FE030FE750F1350A /* DebugHarness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 413AF7A6D08308207D2BA4FB /* DebugHarness.swift */; };
+		35D7B52C8F1502C2D57EB217 /* ObjCCatch.m in Sources */ = {isa = PBXBuildFile; fileRef = 42C37F08CF69B0B7C1F3545A /* ObjCCatch.m */; };
 		383E3E75D139034A13CD8EE7 /* CircleView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 748971BC2B01ECAB096B7F99 /* CircleView.swift */; };
 		4CBD9B82854FE6B275C5E7BF /* YaprApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 204BDA5503C1A0795FA0F8FE /* YaprApp.swift */; };
 		4EF3C595ABB96BF8BB8323C1 /* AppModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 911B806B7914BC4AEAB21E34 /* AppModel.swift */; };
@@ -38,12 +39,15 @@
 		3BFE36D546C7F69372381AC7 /* Yapr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Yapr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3CDEDEC25C688848A4A149E0 /* EBGaramond-Italic-VF.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "EBGaramond-Italic-VF.ttf"; sourceTree = "<group>"; };
 		413AF7A6D08308207D2BA4FB /* DebugHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugHarness.swift; sourceTree = "<group>"; };
+		42C37F08CF69B0B7C1F3545A /* ObjCCatch.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ObjCCatch.m; sourceTree = "<group>"; };
 		4359566522ECB8B0DF0F9A94 /* AudioCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCapture.swift; sourceTree = "<group>"; };
 		4A09594ED8ACD9FD070DBA51 /* SettingsWindow.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsWindow.swift; sourceTree = "<group>"; };
+		5483D2141A32FD0574EF7AA3 /* Yapr-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "Yapr-Bridging-Header.h"; sourceTree = "<group>"; };
 		748971BC2B01ECAB096B7F99 /* CircleView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CircleView.swift; sourceTree = "<group>"; };
 		7E931A86B432D9D3B868A10F /* OFL.txt */ = {isa = PBXFileReference; lastKnownFileType = text; path = OFL.txt; sourceTree = "<group>"; };
 		8E43F40FA058A8AF0FD6F7CA /* FileTranscriber.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileTranscriber.swift; sourceTree = "<group>"; };
 		911B806B7914BC4AEAB21E34 /* AppModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppModel.swift; sourceTree = "<group>"; };
+		9B751949EE3530AD5843D9CE /* ObjCCatch.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ObjCCatch.h; sourceTree = "<group>"; };
 		9E26144F4D59B8A46441C86E /* EBGaramond-VF.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "EBGaramond-VF.ttf"; sourceTree = "<group>"; };
 		A05FBD8D0FD9ED3F4DD30BB8 /* Yapr.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = Yapr.entitlements; sourceTree = "<group>"; };
 		A6D0754115BB37263BC3F60D /* IconButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = IconButton.swift; sourceTree = "<group>"; };
@@ -104,11 +108,14 @@
 				F5D2A6513184396722DF4613 /* LiveTranscriber.swift */,
 				C5E7DFC7541E79D5D900BDCF /* MediaDecoder.swift */,
 				C69C199183CA1CB007B3C0DD /* ModelStore.swift */,
+				9B751949EE3530AD5843D9CE /* ObjCCatch.h */,
+				42C37F08CF69B0B7C1F3545A /* ObjCCatch.m */,
 				A7717B61E2A0048C88470374 /* Settings.swift */,
 				4A09594ED8ACD9FD070DBA51 /* SettingsWindow.swift */,
 				0A79B30E4F8A950A08894739 /* TranscriptFile.swift */,
 				DF6FD3C4869CB6D31D56B976 /* TranscriptWindow.swift */,
 				CFF758A7C94E600570BE8BB7 /* Typography.swift */,
+				5483D2141A32FD0574EF7AA3 /* Yapr-Bridging-Header.h */,
 				A05FBD8D0FD9ED3F4DD30BB8 /* Yapr.entitlements */,
 				204BDA5503C1A0795FA0F8FE /* YaprApp.swift */,
 				E45C68B4D01E4A74E31B82D2 /* Fonts */,
@@ -223,6 +230,7 @@
 				9B8AE6BB7FA9D8FCA41637DE /* LiveTranscriber.swift in Sources */,
 				6ED1B3EA7F0D35ED296AE76E /* MediaDecoder.swift in Sources */,
 				668C65E8FF465C532966A42C /* ModelStore.swift in Sources */,
+				35D7B52C8F1502C2D57EB217 /* ObjCCatch.m in Sources */,
 				C2C8F6AC0D19A82C2478DFF2 /* Settings.swift in Sources */,
 				862C6624A58F77E2ED71C977 /* SettingsWindow.swift in Sources */,
 				2F23EE3BB130550180E56B25 /* TranscriptFile.swift in Sources */,
@@ -252,6 +260,7 @@
 				OTHER_CODE_SIGN_FLAGS = "-r $(SRCROOT)/Yapr/designated.req";
 				PRODUCT_BUNDLE_IDENTIFIER = com.stormbuster.yapr;
 				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "Yapr/Yapr-Bridging-Header.h";
 			};
 			name = Release;
 		};
@@ -393,6 +402,7 @@
 				OTHER_CODE_SIGN_FLAGS = "-r $(SRCROOT)/Yapr/designated.req";
 				PRODUCT_BUNDLE_IDENTIFIER = com.stormbuster.yapr;
 				SDKROOT = macosx;
+				SWIFT_OBJC_BRIDGING_HEADER = "Yapr/Yapr-Bridging-Header.h";
 			};
 			name = Debug;
 		};

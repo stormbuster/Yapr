@@ -57,6 +57,10 @@ final class AppModel: ObservableObject {
             DispatchQueue.main.async { self?.level = value }
         }
         capture.onSamples = { [weak self] samples in self?.live?.append(samples) }
+        capture.onFailure = { [weak self] message in
+            guard let self, self.phase == .recording else { return }
+            self.stop(failure: message)
+        }
     }
 
     // MARK: model
@@ -162,6 +166,7 @@ final class AppModel: ObservableObject {
                 feedInRealTime(feed)
                 #endif
             } else {
+                settings.reconnectDevices()
                 try capture.start(inputUID: settings.inputDeviceUID, outputUID: settings.outputDeviceUID, passThrough: settings.passThrough)
             }
             phase = .recording
@@ -172,20 +177,27 @@ final class AppModel: ObservableObject {
         }
     }
 
-    private func stop() {
+    /// Stops recording, commits what is still live, saves and shows the transcript. With `failure`, the circle then
+    /// shows that message (and Try again) instead of returning to the microphone.
+    private func stop(failure: String? = nil) {
         phase = .finishing
         capture.stop()
         level = 0
-        live?.finish { [weak self] in
-            guard let self else { return }
+        var finished = false
+        let finish = { [weak self] in
+            guard let self, !finished else { return }
+            finished = true
             let file = self.file
             file?.close()
             self.file = nil
             self.committed = []; self.hypothesis = []; self.words = []
             let text = file?.text ?? ""
-            self.onTranscript?(text, text.isEmpty ? nil : file?.url)
-            self.becomeReady()
+            if !text.isEmpty || failure == nil { self.onTranscript?(text, text.isEmpty ? nil : file?.url) }
+            if let failure { self.phase = .failed(failure) } else { self.becomeReady() }
         }
+        live?.finish(finish)
+        // Never leave the button stuck: if the last pass has not come back in 20 s, finish with what is saved.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 20) { if !finished { AudioCapture.log("stop: final pass timed out"); finish() } }
     }
 
     // MARK: audio and video files
@@ -296,6 +308,8 @@ final class AppModel: ObservableObject {
     private func makeID() -> Int { nextID += 1; return nextID }
 
     #if DEBUG
+    func debugDoubleTap() -> String { capture.debugDoubleTap() }
+
     /// Test hook: records from 16 kHz mono samples instead of the microphone, paced like a live speaker.
     func debugStart(feeding samples: [Float]) { start(feed: samples) }
 
