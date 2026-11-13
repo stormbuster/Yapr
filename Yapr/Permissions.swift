@@ -21,9 +21,26 @@ enum Permissions {
         }
     }
 
-    /// Asks macOS; the completion runs on the main queue with the outcome.
+    /// Asks macOS; the completion runs on the main queue with the outcome. Yapr is made a regular app in front first:
+    /// macOS 26 refuses to prompt for a menu bar (accessory) app even when its window is in front.
     static func request(_ source: AudioSource, completion: @escaping (Status) -> Void) {
+        bringToFront()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) { ask(source, completion) }
+    }
+
+    /// While a permission is being asked for, Yapr is an ordinary app: Dock icon, menu bar, in front.
+    static func bringToFront() {
+        NSApp.setActivationPolicy(.regular)
+        NSApp.activate(ignoringOtherApps: true)
         NSApp.activate()
+    }
+
+    static func backToMenuBar() {
+        NSApp.setActivationPolicy(.accessory)
+    }
+
+    private static func ask(_ source: AudioSource, _ completion: @escaping (Status) -> Void) {
+        AudioCapture.log("asking for \(source); active=\(NSApp.isActive) policy=\(NSApp.activationPolicy().rawValue)")
         switch source {
         case .microphone:
             AVCaptureDevice.requestAccess(for: .audio) { granted in
@@ -100,7 +117,7 @@ final class PermissionWindowController: NSObject, NSWindowDelegate {
             w.center()
             window = w
         }
-        NSApp.activate()
+        Permissions.bringToFront()
         window?.makeKeyAndOrderFront(nil)
         poll?.invalidate()
         poll = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.refresh() }
@@ -126,6 +143,7 @@ final class PermissionWindowController: NSObject, NSWindowDelegate {
     private func finish() {
         poll?.invalidate(); poll = nil
         window?.orderOut(nil)
+        Permissions.backToMenuBar()
         let next = onGranted
         onGranted = nil
         next?()
@@ -146,6 +164,7 @@ final class PermissionWindowController: NSObject, NSWindowDelegate {
 
     func windowWillClose(_ notification: Notification) {
         poll?.invalidate(); poll = nil
+        Permissions.backToMenuBar()
         onGranted = nil
     }
 }
