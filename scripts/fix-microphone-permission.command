@@ -39,6 +39,7 @@ else
 fi
 codesign --verify --deep --strict "$app" && echo "signature: valid"
 tccutil reset Microphone "$bundle_id" >/dev/null 2>&1 && echo "microphone entry reset"
+tccutil reset AudioCapture "$bundle_id" >/dev/null 2>&1 && echo "system audio entry reset"
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$app"
 
 echo
