@@ -63,3 +63,7 @@ targets:
         OTHER_CODE_SIGN_FLAGS: "-r $(SRCROOT)/Yapr/designated.req"
         COMBINE_HIDPI_IMAGES: YES
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+      configs:
+        # Release builds go to other Macs: no debugger entitlement (get-task-allow) in their signature.
+        Release:
+          CODE_SIGN_INJECT_BASE_ENTITLEMENTS: NO

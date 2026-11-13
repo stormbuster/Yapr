@@ -53,8 +53,11 @@ launches it. Pass another folder (`scripts/release.sh ~/Applications`), `--no-la
 Intel Macs have no Neural Engine, so Phonon 2 runs on the CPU: expect live words to settle a little more slowly,
 files at several times real speed, and about 2.5 GB of memory while Yapr is open. To install there, either clone
 this repository and run `scripts/release.sh`, or copy the zip over and unzip it into Applications. The app is not
-notarised, so the first time, Control-click it and choose Open (or run
-`xattr -dr com.apple.quarantine /Applications/Yapr.app`).
+notarised, so the first time, Control-click it and choose Open (or use Open Anyway in System Settings ›
+Privacy & Security). `scripts/release.sh --zip --no-install` builds a zip with the app, a `Read me.txt` and
+`fix-microphone-permission.command`: if Yapr does not ask for the microphone or is missing from Privacy & Security ›
+Microphone on that Mac, run that script there. It clears quarantine, re-signs the app locally, resets Yapr's
+microphone entry and reopens Yapr so macOS asks again.
 
 On first launch Yapr downloads the Phonon-2 Core ML model (330 MB, pinned revision, SHA-256 checked) from
 [FermionResearch/Phonon-2-CoreML](https://huggingface.co/FermionResearch/Phonon-2-CoreML) into
