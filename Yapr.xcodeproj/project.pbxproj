@@ -27,6 +27,7 @@
 		98AAF26BE3B6DEDC7995F3B6 /* EBGaramond-VF.ttf in Resources */ = {isa = PBXBuildFile; fileRef = 9E26144F4D59B8A46441C86E /* EBGaramond-VF.ttf */; };
 		9B8AE6BB7FA9D8FCA41637DE /* LiveTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5D2A6513184396722DF4613 /* LiveTranscriber.swift */; };
 		B0B880E6F12D8144FF247AEE /* TranscriptWindow.swift in Sources */ = {isa = PBXBuildFile; fileRef = DF6FD3C4869CB6D31D56B976 /* TranscriptWindow.swift */; };
+		B0C89DC730DDD0546BFA006F /* SystemAudioTap.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F595C65A70B7B60B78510B4 /* SystemAudioTap.swift */; };
 		C2C8F6AC0D19A82C2478DFF2 /* Settings.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7717B61E2A0048C88470374 /* Settings.swift */; };
 		F793A8B6DD879A9F7B8C46AA /* IconButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = A6D0754115BB37263BC3F60D /* IconButton.swift */; };
 		FF97A54F8324C5332C2D5A16 /* AudioCapture.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4359566522ECB8B0DF0F9A94 /* AudioCapture.swift */; };
@@ -38,6 +39,7 @@
 		204BDA5503C1A0795FA0F8FE /* YaprApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YaprApp.swift; sourceTree = "<group>"; };
 		3BFE36D546C7F69372381AC7 /* Yapr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Yapr.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		3CDEDEC25C688848A4A149E0 /* EBGaramond-Italic-VF.ttf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "EBGaramond-Italic-VF.ttf"; sourceTree = "<group>"; };
+		3F595C65A70B7B60B78510B4 /* SystemAudioTap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SystemAudioTap.swift; sourceTree = "<group>"; };
 		413AF7A6D08308207D2BA4FB /* DebugHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugHarness.swift; sourceTree = "<group>"; };
 		42C37F08CF69B0B7C1F3545A /* ObjCCatch.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ObjCCatch.m; sourceTree = "<group>"; };
 		4359566522ECB8B0DF0F9A94 /* AudioCapture.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioCapture.swift; sourceTree = "<group>"; };
@@ -112,6 +114,7 @@
 				42C37F08CF69B0B7C1F3545A /* ObjCCatch.m */,
 				A7717B61E2A0048C88470374 /* Settings.swift */,
 				4A09594ED8ACD9FD070DBA51 /* SettingsWindow.swift */,
+				3F595C65A70B7B60B78510B4 /* SystemAudioTap.swift */,
 				0A79B30E4F8A950A08894739 /* TranscriptFile.swift */,
 				DF6FD3C4869CB6D31D56B976 /* TranscriptWindow.swift */,
 				CFF758A7C94E600570BE8BB7 /* Typography.swift */,
@@ -233,6 +236,7 @@
 				35D7B52C8F1502C2D57EB217 /* ObjCCatch.m in Sources */,
 				C2C8F6AC0D19A82C2478DFF2 /* Settings.swift in Sources */,
 				862C6624A58F77E2ED71C977 /* SettingsWindow.swift in Sources */,
+				B0C89DC730DDD0546BFA006F /* SystemAudioTap.swift in Sources */,
 				2F23EE3BB130550180E56B25 /* TranscriptFile.swift in Sources */,
 				B0B880E6F12D8144FF247AEE /* TranscriptWindow.swift in Sources */,
 				2B1EE40B6042D7563B45E433 /* Typography.swift in Sources */,

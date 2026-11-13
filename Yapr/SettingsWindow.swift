@@ -27,27 +27,39 @@ struct SettingsView: View {
     var body: some View {
         Form {
             Section("Audio") {
-                Picker("Input", selection: $settings.inputDeviceUID) {
-                    Text("System default").tag("")
-                    Divider()
-                    ForEach(inputs) { Text($0.name).tag($0.uid) }
-                    if !settings.inputDeviceUID.isEmpty && !inputs.contains(where: { $0.uid == settings.inputDeviceUID }) {
-                        Text(settings.inputDeviceName.isEmpty ? "Disconnected device" : "\(settings.inputDeviceName) (disconnected)")
-                            .tag(settings.inputDeviceUID)
-                    }
+                Picker("Listen to", selection: $settings.source) {
+                    Text("Microphone").tag(AudioSource.microphone)
+                    Text("System audio").tag(AudioSource.system)
                 }
-                Picker("Output", selection: $settings.outputDeviceUID) {
-                    Text("System default").tag("")
-                    Divider()
-                    ForEach(outputs) { Text($0.name).tag($0.uid) }
-                    if !settings.outputDeviceUID.isEmpty && !outputs.contains(where: { $0.uid == settings.outputDeviceUID }) {
-                        Text(settings.outputDeviceName.isEmpty ? "Disconnected device" : "\(settings.outputDeviceName) (disconnected)")
-                            .tag(settings.outputDeviceUID)
+                .pickerStyle(.segmented)
+                if settings.source == .system {
+                    Text("Transcribes everything this Mac plays: calls, videos, podcasts. macOS asks once for permission "
+                         + "(Privacy & Security › Screen & System Audio Recording).")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Picker("Input", selection: $settings.inputDeviceUID) {
+                        Text("System default").tag("")
+                        Divider()
+                        ForEach(inputs) { Text($0.name).tag($0.uid) }
+                        if !settings.inputDeviceUID.isEmpty && !inputs.contains(where: { $0.uid == settings.inputDeviceUID }) {
+                            Text(settings.inputDeviceName.isEmpty ? "Disconnected device" : "\(settings.inputDeviceName) (disconnected)")
+                                .tag(settings.inputDeviceUID)
+                        }
                     }
-                }
-                Toggle(isOn: $settings.passThrough) {
-                    Text("Pass-through")
-                    Text("Hear yourself on the output while recording. Use headphones to avoid feedback.")
+                    Picker("Output", selection: $settings.outputDeviceUID) {
+                        Text("System default").tag("")
+                        Divider()
+                        ForEach(outputs) { Text($0.name).tag($0.uid) }
+                        if !settings.outputDeviceUID.isEmpty && !outputs.contains(where: { $0.uid == settings.outputDeviceUID }) {
+                            Text(settings.outputDeviceName.isEmpty ? "Disconnected device" : "\(settings.outputDeviceName) (disconnected)")
+                                .tag(settings.outputDeviceUID)
+                        }
+                    }
+                    Toggle(isOn: $settings.passThrough) {
+                        Text("Pass-through")
+                        Text("Hear yourself on the output while recording. Use headphones to avoid feedback.")
+                    }
                 }
             }
             Section("Transcripts") {

@@ -129,7 +129,7 @@ final class AppModel: ObservableObject {
 
     func toggleRecording() {
         switch phase {
-        case .ready: requestMicrophoneThenStart()
+        case .ready: settings.source == .system ? start() : requestMicrophoneThenStart()
         case .recording: stop()
         default: break
         }
@@ -167,7 +167,7 @@ final class AppModel: ObservableObject {
                 #endif
             } else {
                 settings.reconnectDevices()
-                try capture.start(inputUID: settings.inputDeviceUID, outputUID: settings.outputDeviceUID, passThrough: settings.passThrough)
+                try capture.start(source: settings.source, inputUID: settings.inputDeviceUID, outputUID: settings.outputDeviceUID, passThrough: settings.passThrough)
             }
             phase = .recording
         } catch {

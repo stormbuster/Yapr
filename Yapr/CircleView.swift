@@ -1,9 +1,10 @@
 import SwiftUI
 
-/// The round panel: a big microphone at rest; while recording the microphone becomes a smaller stop button and the words
+/// The round panel: a big microphone at rest (a speaker when Yapr listens to system audio); while recording the microphone becomes a smaller stop button and the words
 /// Phonon 2 hears drift in above it.
 struct CircleView: View {
     @ObservedObject var model: AppModel
+    @ObservedObject private var settings = Settings.shared
     var onDragBegan: () -> Void
     var onDragEnded: () -> Void
     @State private var dropTargeted = false
@@ -119,7 +120,7 @@ struct CircleView: View {
                     .animation(.easeOut(duration: 0.2), value: showDropHint)
                     .allowsHitTesting(false)
                 MicButton(compact: isListening, busy: model.phase == .finishing, level: model.level,
-                          fileProgress: fileJob?.progress,
+                          systemAudio: settings.source == .system, fileProgress: fileJob?.progress,
                           action: fileJob == nil ? model.toggleRecording : model.cancelFile)
                     .offset(y: isListening ? 82 : 0)
             }
@@ -156,13 +157,14 @@ private struct MicButton: View {
     let compact: Bool
     let busy: Bool
     let level: Float
+    let systemAudio: Bool
     let fileProgress: Double?          // a file being transcribed: progress ring, and the button cancels
     let action: () -> Void
     @State private var hover = false
 
     var body: some View {
         let size: CGFloat = compact ? 64 : 124
-        let icon = fileProgress != nil ? "xmark" : compact ? "stop.fill" : "mic.fill"
+        let icon = fileProgress != nil ? "xmark" : compact ? "stop.fill" : systemAudio ? "speaker.wave.2.fill" : "mic.fill"
         Button(action: action) {
             ZStack {
                 // Level rings: confidence that the microphone is hearing you.
@@ -195,7 +197,8 @@ private struct MicButton: View {
         .buttonStyle(PressStyle())
         .onHover { h in withAnimation(.easeOut(duration: 0.15)) { hover = h } }
         .animation(.easeOut(duration: 0.09), value: level)
-        .help(fileProgress != nil ? "Stop transcribing this file" : compact ? "Stop and show the transcript" : "Start transcribing")
+        .help(fileProgress != nil ? "Stop transcribing this file" : compact ? "Stop and show the transcript"
+              : systemAudio ? "Start transcribing what this Mac plays" : "Start transcribing")
     }
 }
 

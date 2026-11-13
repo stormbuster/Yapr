@@ -41,6 +41,8 @@
 	<string>public.app-category.productivity</string>
 	<key>LSUIElement</key>
 	<true/>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>Yapr listens to what your Mac plays to transcribe it, when you choose System audio. Audio never leaves your Mac.</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Transcription by Phonon-2 (CC-BY-4.0, Fermion Research). Set in EB Garamond (OFL).</string>
 	<key>NSMicrophoneUsageDescription</key>

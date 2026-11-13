@@ -21,7 +21,7 @@ private func objc(_ block: () -> Void) throws {
     }
 }
 
-/// Captures the microphone, hands out mono 16 kHz samples for Phonon-2 and an input level for the UI, and optionally
+/// Captures the microphone (or, with `.system`, everything the Mac plays: SystemAudioTap), hands out mono 16 kHz samples for Phonon-2 and an input level for the UI, and optionally
 /// plays the microphone back on a chosen output device (pass-through). Capture and playback run on separate engines so
 /// input and output can be different devices.
 ///
@@ -47,12 +47,13 @@ final class AudioCapture {
     var onFailure: ((String) -> Void)?
 
     private var engine: AVAudioEngine?
+    private var systemTap: SystemAudioTap?
     private let targetFormat = AVAudioFormat(commonFormat: .pcmFormatFloat32, sampleRate: 16_000, channels: 1, interleaved: false)!
     private var monitor: PassThroughMonitor?
     private let monitorLock = OSAllocatedUnfairLock()
     private var configObserver: NSObjectProtocol?
     private var activity: NSObjectProtocol?
-    private var lastStart: (input: String, output: String, passThrough: Bool)?
+    private var lastStart: (source: AudioSource, input: String, output: String, passThrough: Bool)?
     private var watchdog: Timer?
     private var startedAt = Date()
     private var rebuilds = 0
@@ -68,8 +69,8 @@ final class AudioCapture {
 
     private static let silenceLimit: TimeInterval = 3   // seconds without a buffer before capture counts as dead
 
-    func start(inputUID: String, outputUID: String, passThrough: Bool) throws {
-        try open(inputUID: inputUID, outputUID: outputUID, passThrough: passThrough)
+    func start(source: AudioSource, inputUID: String, outputUID: String, passThrough: Bool) throws {
+        if source == .system { try openSystem() } else { try open(inputUID: inputUID, outputUID: outputUID, passThrough: passThrough) }
         rebuilds = 0
         watchdog?.invalidate()
         watchdog = Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { [weak self] _ in self?.checkHealth() }
@@ -104,11 +105,30 @@ final class AudioCapture {
         if let startError { throw startError }
         self.engine = engine
         startedAt = Date()
-        lastStart = (inputUID, outputUID, passThrough)
+        lastStart = (.microphone, inputUID, outputUID, passThrough)
         recoveries = []
         if passThrough { setPassThrough(true, outputUID: outputUID) }
         configObserver = NotificationCenter.default.addObserver(forName: .AVAudioEngineConfigurationChange, object: engine,
                                                                 queue: .main) { [weak self] _ in self?.configurationChanged() }
+    }
+
+    /// System audio: a fresh process tap on the current output device. There is nothing to pass through (the sound
+    /// already plays), and when the output device changes (headphones in, AirPods out) the tap moves to the new one.
+    private func openSystem() throws {
+        teardown()
+        let tap = SystemAudioTap()
+        tap.onBuffer = { [weak self] buffer in self?.process(buffer) }
+        tap.onOutputChange = { [weak self] in
+            guard let self, self.systemTap != nil else { return }
+            AudioCapture.log("system audio: output device changed, rebuilding")
+            do { try self.openSystem() } catch { AudioCapture.log("system audio: rebuild failed: \(error.localizedDescription)") }
+        }
+        state.withLockUnchecked { sourceFormat = nil; lastBufferAt = .distantPast; buffers = 0 }
+        try tap.start()
+        systemTap = tap
+        startedAt = Date()
+        lastStart = (.system, "", "", false)
+        recoveries = []
     }
 
     /// The tap takes the node's own format (format: nil), so it can never mismatch the hardware; `process` adapts
@@ -146,9 +166,10 @@ final class AudioCapture {
     }
 
     /// Once a second while recording: if no audio has arrived for a while, rebuild capture from scratch (on the
-    /// chosen input, then the system default); if that does not help either, stop and say so.
+    /// chosen input, then the system default); if that does not help either, stop and say so. Not for system audio: its
+    /// tap delivers nothing until something plays, and a quiet Mac is normal.
     private func checkHealth() {
-        guard let p = lastStart else { return }
+        guard let p = lastStart, p.source == .microphone else { return }
         let now = Date()
         let last = state.withLockUnchecked { lastBufferAt }
         // Only real audio since the last (re)open counts as recovery; opening the engine again does not.
@@ -180,6 +201,8 @@ final class AudioCapture {
         if let configObserver { NotificationCenter.default.removeObserver(configObserver) }
         configObserver = nil
         setPassThrough(false, outputUID: "")
+        systemTap?.stop()
+        systemTap = nil
         if let engine {
             try? objc {
                 engine.inputNode.removeTap(onBus: 0)
@@ -189,7 +212,7 @@ final class AudioCapture {
         engine = nil
     }
 
-    var isRunning: Bool { engine?.isRunning ?? false }
+    var isRunning: Bool { engine?.isRunning ?? (systemTap != nil) }
 
     func setPassThrough(_ on: Bool, outputUID: String) {
         monitorLock.withLockUnchecked {
@@ -269,13 +292,17 @@ final class AudioCapture {
         }
     }
 
-    /// Mono at the hardware rate: the average of a stereo pair, or the first channel of a multi-channel interface.
+    /// Mono at the hardware rate: the average of a stereo pair (separate or interleaved, as system audio may come), or the
+    /// first channel of a multi-channel interface.
     private func downmix(_ buffer: AVAudioPCMBuffer, to monoFormat: AVAudioFormat) -> AVAudioPCMBuffer? {
         guard let src = buffer.floatChannelData, buffer.frameLength > 0,
               let out = AVAudioPCMBuffer(pcmFormat: monoFormat, frameCapacity: buffer.frameLength) else { return nil }
         let n = Int(buffer.frameLength), channels = Int(buffer.format.channelCount)
         let dst = out.floatChannelData![0]
-        if channels == 2 {
+        if buffer.format.isInterleaved && channels > 1 {
+            let frames = src[0]
+            for i in 0..<n { dst[i] = channels == 2 ? 0.5 * (frames[2 * i] + frames[2 * i + 1]) : frames[channels * i] }
+        } else if channels == 2 {
             for i in 0..<n { dst[i] = 0.5 * (src[0][i] + src[1][i]) }
         } else {
             dst.update(from: src[0], count: n)

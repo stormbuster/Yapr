@@ -1,11 +1,18 @@
 import Foundation
 
+/// What Yapr listens to: the chosen microphone, or everything the Mac plays (calls, videos, podcasts).
+enum AudioSource: String, CaseIterable, Identifiable {
+    case microphone, system
+    var id: String { rawValue }
+}
+
 /// User preferences, persisted in UserDefaults. An empty device UID means "follow the system default".
 final class Settings: ObservableObject {
     static let shared = Settings()
 
     private let defaults = UserDefaults.standard
 
+    @Published var source: AudioSource { didSet { defaults.set(source.rawValue, forKey: Keys.source) } }
     @Published var inputDeviceUID: String { didSet { defaults.set(inputDeviceUID, forKey: Keys.input); rememberNames() } }
     @Published var outputDeviceUID: String { didSet { defaults.set(outputDeviceUID, forKey: Keys.output); rememberNames() } }
     /// Names of the chosen devices, to recognise them if their UIDs change and to label them while disconnected.
@@ -20,10 +27,11 @@ final class Settings: ObservableObject {
 
     private enum Keys {
         static let input = "inputDeviceUID", output = "outputDeviceUID", passThrough = "passThrough", folder = "transcriptsFolder"
-        static let inputName = "inputDeviceName", outputName = "outputDeviceName"
+        static let inputName = "inputDeviceName", outputName = "outputDeviceName", source = "audioSource"
     }
 
     private init() {
+        source = AudioSource(rawValue: defaults.string(forKey: Keys.source) ?? "") ?? .microphone
         inputDeviceUID = defaults.string(forKey: Keys.input) ?? ""
         outputDeviceUID = defaults.string(forKey: Keys.output) ?? ""
         inputDeviceName = defaults.string(forKey: Keys.inputName) ?? ""

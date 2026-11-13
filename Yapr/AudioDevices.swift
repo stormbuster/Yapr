@@ -37,6 +37,18 @@ enum AudioDevices {
         return parts.joined(separator: ":")
     }
 
+    /// The UID of the current default output device (the one system sound plays on).
+    static func defaultOutputUID() -> String? {
+        var address = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDefaultOutputDevice,
+                                                 mScope: kAudioObjectPropertyScopeGlobal,
+                                                 mElement: kAudioObjectPropertyElementMain)
+        var id = AudioDeviceID(0)
+        var size = UInt32(MemoryLayout<AudioDeviceID>.size)
+        guard AudioObjectGetPropertyData(AudioObjectID(kAudioObjectSystemObject), &address, 0, nil, &size, &id) == noErr,
+              id != kAudioObjectUnknown else { return nil }
+        return string(id, kAudioDevicePropertyDeviceUID)
+    }
+
     static func startObserving() {
         var address = AudioObjectPropertyAddress(mSelector: kAudioHardwarePropertyDevices,
                                                  mScope: kAudioObjectPropertyScopeGlobal,

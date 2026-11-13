@@ -43,6 +43,7 @@ targets:
         LSUIElement: true
         LSApplicationCategoryType: public.app-category.productivity
         NSMicrophoneUsageDescription: Yapr listens to your microphone to transcribe what you say. Audio never leaves your Mac.
+        NSAudioCaptureUsageDescription: Yapr listens to what your Mac plays to transcribe it, when you choose System audio. Audio never leaves your Mac.
         CFBundleDocumentTypes:
           - CFBundleTypeName: Audio or video
             CFBundleTypeRole: Viewer
