@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		145E12CAAF9A5B695F877272 /* Permissions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 127DCFD90B32586CFE55594F /* Permissions.swift */; };
 		1939A56509DA3B6DA3C1E68D /* FileTranscriber.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E43F40FA058A8AF0FD6F7CA /* FileTranscriber.swift */; };
 		2429FBFE1B0B215D769611F7 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C2B16D89DF89E7E7C1945BD0 /* AppIcon.icon */; };
 		2A9D8DFDF55BC29784D3DC7A /* CirclePanel.swift in Sources */ = {isa = PBXBuildFile; fileRef = D5955881BD1DDE29D349DCBF /* CirclePanel.swift */; };
@@ -35,6 +36,7 @@
 
 /* Begin PBXFileReference section */
 		0A79B30E4F8A950A08894739 /* TranscriptFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranscriptFile.swift; sourceTree = "<group>"; };
+		127DCFD90B32586CFE55594F /* Permissions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Permissions.swift; sourceTree = "<group>"; };
 		1C2951299F13F3FD2D0CE39D /* AudioDevices.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioDevices.swift; sourceTree = "<group>"; };
 		204BDA5503C1A0795FA0F8FE /* YaprApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = YaprApp.swift; sourceTree = "<group>"; };
 		3BFE36D546C7F69372381AC7 /* Yapr.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Yapr.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -112,6 +114,7 @@
 				C69C199183CA1CB007B3C0DD /* ModelStore.swift */,
 				9B751949EE3530AD5843D9CE /* ObjCCatch.h */,
 				42C37F08CF69B0B7C1F3545A /* ObjCCatch.m */,
+				127DCFD90B32586CFE55594F /* Permissions.swift */,
 				A7717B61E2A0048C88470374 /* Settings.swift */,
 				4A09594ED8ACD9FD070DBA51 /* SettingsWindow.swift */,
 				3F595C65A70B7B60B78510B4 /* SystemAudioTap.swift */,
@@ -234,6 +237,7 @@
 				6ED1B3EA7F0D35ED296AE76E /* MediaDecoder.swift in Sources */,
 				668C65E8FF465C532966A42C /* ModelStore.swift in Sources */,
 				35D7B52C8F1502C2D57EB217 /* ObjCCatch.m in Sources */,
+				145E12CAAF9A5B695F877272 /* Permissions.swift in Sources */,
 				C2C8F6AC0D19A82C2478DFF2 /* Settings.swift in Sources */,
 				862C6624A58F77E2ED71C977 /* SettingsWindow.swift in Sources */,
 				B0C89DC730DDD0546BFA006F /* SystemAudioTap.swift in Sources */,

@@ -8,9 +8,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var statusItem: NSStatusItem!
     private var panel: CirclePanelController!
     private let settingsWindow = SettingsWindowController()
+    private let permissionWindow = PermissionWindowController()
     private var cancellables: Set<AnyCancellable> = []
 
     static func main() {
+        relaunchThroughLaunchServicesIfNeeded()
         let app = NSApplication.shared
         let delegate = AppDelegate()
         app.delegate = delegate
@@ -47,8 +49,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             self?.statusItem.button?.contentTintColor = recording ? .systemRed : nil
         }.store(in: &cancellables)
 
+        model.onNeedsPermission = { [weak self] source, next in self?.permissionWindow.show(for: source, then: next) }
         model.loadModel()
-        AppDelegate.requestMicrophoneOnFirstRun()
+        // Ask for what the chosen source needs right away, from a window of Yapr's own (see Permissions).
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) { [weak self] in
+            let source = Settings.shared.source
+            if Permissions.status(for: source) != .granted { self?.permissionWindow.show(for: source) }
+        }
         // Open the circle on launch, once the status item has been placed in the menu bar so it can sit under it.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
             guard let self, !self.panel.isVisible else { return }
@@ -70,12 +77,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         if model.transcribeFiles(urls), !panel.isVisible { panel.show() }
     }
 
-    /// Ask on first launch rather than on the first click of the microphone, so Yapr is listed under
-    /// Privacy & Security › Microphone from the start and the first recording is not interrupted by the prompt.
-    private static func requestMicrophoneOnFirstRun() {
-        guard AVCaptureDevice.authorizationStatus(for: .audio) == .notDetermined else { return }
-        NSApp.activate(ignoringOtherApps: true)
-        AVCaptureDevice.requestAccess(for: .audio) { _ in }
+    /// macOS gives privacy permissions to the app responsible for a process. Started from a terminal (or by another
+    /// app), that is the terminal, so Yapr would never appear under Privacy & Security and its requests would be
+    /// asked, or silently refused, on the terminal's behalf. Apps started by Finder, the Dock or `open` are children
+    /// of launchd; anything else relaunches through Launch Services and quits.
+    private static func relaunchThroughLaunchServicesIfNeeded() {
+        #if !DEBUG
+        guard getppid() != 1, ProcessInfo.processInfo.environment["YAPR_NO_RELAUNCH"] == nil else { return }
+        let configuration = NSWorkspace.OpenConfiguration()
+        configuration.createsNewApplicationInstance = true
+        let done = DispatchSemaphore(value: 0)
+        var launched = false
+        NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { app, _ in
+            launched = app != nil
+            done.signal()
+        }
+        _ = done.wait(timeout: .now() + 10)
+        if launched { exit(0) }
+        #endif
     }
 
     @objc private func statusItemClicked(_ sender: NSStatusBarButton) {

@@ -42,14 +42,15 @@ tccutil reset Microphone "$bundle_id" >/dev/null 2>&1 && echo "microphone entry 
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -f "$app"
 
 echo
-echo "-- Opening Yapr: allow the microphone when macOS asks"
+echo "-- Opening Yapr: in the window it shows, press Allow, then allow the microphone when macOS asks"
 start=$(date '+%Y-%m-%d %H:%M:%S')
 open "$app"
-sleep 8
+echo "(waiting 30 s for you to answer)"
+sleep 30
 echo
-echo "-- What macOS's privacy service recorded for Yapr (useful if it still fails)"
+echo "-- What macOS's privacy service recorded (paste this if it still fails)"
 log show --style compact --start "$start" --predicate 'process == "tccd"' 2>/dev/null \
-    | grep -i -E "yapr|$bundle_id" | grep -i -E "microphone|kTCCServiceMicrophone|prompt|deny|refus|csreq|signature|auth" \
-    | cut -c1-240 | tail -15
+    | grep -E "kTCCServiceMicrophone|kTCCServiceAudioCapture|Policy disallows|AUTHREQ_ATTRIBUTION.*$bundle_id|AUTHREQ_RESULT|prompt" \
+    | cut -c1-260 | tail -25
 echo
 echo "Done. Yapr should now be listed under System Settings › Privacy & Security › Microphone."

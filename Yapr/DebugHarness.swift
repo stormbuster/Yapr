@@ -13,6 +13,17 @@ enum DebugHarness {
     static func runIfRequested(model: AppModel, panel: CirclePanelController, settings: SettingsWindowController) {
         let env = ProcessInfo.processInfo.environment
         if env["YAPR_MIC_TEST"] != nil { runMicTest(model: model); return }
+        if let dir = env["YAPR_PERMISSION_SNAPS"] {
+            AudioCapture.log("permission status: microphone=\(Permissions.status(for: .microphone)) system=\(Permissions.status(for: .system))")
+            let w = PermissionWindowController()
+            for (source, status, name) in [(AudioSource.microphone, Permissions.Status.undecided, "mic-ask"), (.microphone, .denied, "mic-off"),
+                                           (.system, .undecided, "system-ask"), (.system, .denied, "system-off")] {
+                w.debugSnapshot(source, status, to: URL(fileURLWithPath: dir).appendingPathComponent("\(name).png"))
+            }
+            AudioCapture.log("permission snaps written")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { NSApp.terminate(nil) }
+            return
+        }
         guard let dir = env["YAPR_SNAPSHOTS"] else { return }
         let t0 = Date()
         phaseLog = model.$phase.removeDuplicates { a, b in

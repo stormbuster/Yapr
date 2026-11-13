@@ -25,6 +25,9 @@ final class AppModel: ObservableObject {
     @Published private(set) var words: [DisplayWord] = []
     @Published private(set) var level: Float = 0
 
+    /// Called when recording needs a permission macOS has not given yet; the closure continues once it is given.
+    var onNeedsPermission: ((AudioSource, @escaping () -> Void) -> Void)?
+
     /// Called with the full transcript and its file when a recording stops.
     var onTranscript: ((String, URL?) -> Void)?
 
@@ -129,27 +132,22 @@ final class AppModel: ObservableObject {
 
     func toggleRecording() {
         switch phase {
-        case .ready: settings.source == .system ? start() : requestMicrophoneThenStart()
+        case .ready: startWithPermission()
         case .recording: stop()
         default: break
         }
     }
 
-    private func requestMicrophoneThenStart() {
-        AudioCapture.log("microphone authorization: \(AVCaptureDevice.authorizationStatus(for: .audio).rawValue)")
-        switch AVCaptureDevice.authorizationStatus(for: .audio) {
-        case .authorized: start()
-        case .notDetermined:
-            AVCaptureDevice.requestAccess(for: .audio) { granted in
-                DispatchQueue.main.async { granted ? self.start() : self.microphoneDenied() }
-            }
-        default: microphoneDenied()
+    private func startWithPermission() {
+        let source = settings.source
+        let status = Permissions.status(for: source)
+        AudioCapture.log("permission for \(source): \(status)")
+        if status == .granted { start(); return }
+        guard let onNeedsPermission else { start(); return }
+        onNeedsPermission(source) { [weak self] in
+            guard let self, self.phase == .ready else { return }
+            self.start()
         }
-    }
-
-    private func microphoneDenied() {
-        phase = .failed("Yapr needs the microphone.\nAllow it in System Settings › Privacy & Security › Microphone.")
-        NSWorkspace.shared.open(URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone")!)
     }
 
     private func start(feed: [Float]? = nil) {
